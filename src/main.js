@@ -1,5 +1,5 @@
-import TripPresenter from './presenter/trip-presenter.js';
+import Presenter from './presenter/presenter';
 
-const tripContainer = document.querySelector('.trip-events');
-const tripPresenter = new TripPresenter(tripContainer);
-tripPresenter.init();
+const currentPresenter = new Presenter();
+
+currentPresenter.init();
