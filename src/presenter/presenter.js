@@ -1,29 +1,32 @@
+import { render } from '../render.js';
 import Filters from '../view/filters';
 import FormCreation from '../view/form-create';
 import FormEditing from '../view/form-edit';
 import PointEdit from '../view/point-edit';
 import Point from '../view/point';
 import Sorting from '../view/sorting';
-import { render } from '../render.js';
-
-const MAX_ROUTE_POINT_COUNT = 3;
 
 export default class Presenter {
-  PointRouteListPart = new PointEdit();
+  eventListComponent = new PointEdit();
 
-  constructor() {
-    this.tripEvents = document.querySelector('.trip-events');
-    this.tripControlFilters = document.querySelector('.trip-controls__filters');
+  constructor({eventsModel}) {
+    this.eventsContainer = document.querySelector('.trip-events');
+    this.filterContainer = document.querySelector('.trip-controls__filters');
+    this.eventsModel = eventsModel;
   }
 
   init() {
-    render(new Filters(), this.tripControlFilters);
-    render(new Sorting(), this.tripEvents);
-    render(this.PointRouteListPart, this.tripEvents);
-    render(new FormEditing(), this.PointRouteListPart.getElement());
-    render(new FormCreation(), this.PointRouteListPart.getElement());
-    for (let i = 0; i < MAX_ROUTE_POINT_COUNT; i++) {
-      render(new Point(), this.PointRouteListPart.getElement());
+    this.boardEvents = [...this.eventsModel.getEvents()];
+
+    render(new Filters(), this.filterContainer);
+    render(new Sorting(), this.eventsContainer);
+    render(this.eventListComponent, this.eventsContainer);
+    render(new FormEditing({event: this.boardEvents[0]}), this.eventListComponent.getElement());
+
+    for (let i = 1; i < this.boardEvents.length; i++) {
+      render(new Point({event: this.boardEvents[i]}), this.eventListComponent.getElement());
     }
+
+    render(new FormCreation(), this.eventListComponent.getElement());
   }
 }
