@@ -16,7 +16,7 @@ module.exports = {
     }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'public', to: 'build', globOptions: { ignore: ['**/index.html'] } }
+        { from: "public", to: ".", globOptions: { ignore: ["**/index.html"] } }
       ]
     })
   ],
