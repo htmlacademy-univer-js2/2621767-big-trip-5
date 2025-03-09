@@ -6,12 +6,12 @@ import {getOffersByType} from '../utils.js';
 import {formatEventDuration} from '../utils.js';
 
 function createPointRouteTemplate(event) {
-  const {startDate, endDate, type, price, isFavourite} = event;
+  const {dateFrom, dateTo, basePrice, isFavourite, type} = event;
 
-  const startTime = formatEventTime(startDate);
-  const endTime = formatEventTime(endDate);
+  const startTime = formatEventTime(dateFrom);
+  const endTime = formatEventTime(dateTo);
 
-  const date = formatEventDate(startDate);
+  const date = formatEventDate(dateFrom);
 
   const destination = getDestinationById(event);
   const destinationName = destination.cityName;
@@ -28,7 +28,7 @@ function createPointRouteTemplate(event) {
     `)
     .join('');
 
-  const duration = formatEventDuration(startDate, endDate);
+  const duration = formatEventDuration(dateFrom, dateTo);
 
   const isFavouriteEvent = isFavourite ? 'event__favorite-btn--active' : '';
 
@@ -48,7 +48,7 @@ function createPointRouteTemplate(event) {
                   <p class="event__duration">${duration}</p>
                 </div>
                 <p class="event__price">
-                  &euro;&nbsp;<span class="event__price-value">${price}</span>
+                  &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
                 </p>
                 <h4 class="visually-hidden">Offers:</h4>
                 <ul class="event__selected-offers">

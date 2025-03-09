@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import {mockDestinations} from './mock/destination';
-import {mockOffers} from './mock/offers';
+import {mockDestinations} from './mock/destination-mock';
+import {mockOffers} from './mock/offers-mock';
 
 dayjs.extend(duration);
 
@@ -26,7 +26,7 @@ function formatFormEventDate(date) {
 }
 
 function getDestinationById(event) {
-  return mockDestinations.find((destination) => destination.id === event.destinationID);
+  return mockDestinations.find((destination) => destination.id === event.destination);
 }
 
 function getOffersByType(event) {
