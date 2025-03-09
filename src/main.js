@@ -1,7 +1,7 @@
-import Presenter from './presenter/presenter';
-import EventsModel from './model/events.js';
+import BoardPresenter from './presenter/board-presenter';
+import EventsModel from './model/events-model.js';
 
 const eventsModel = new EventsModel();
-const currentPresenter = new Presenter({eventsModel});
+const currentPresenter = new BoardPresenter({eventsModel});
 
 currentPresenter.init();
