@@ -16,7 +16,7 @@ module.exports = {
     }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: "public", to: ".", globOptions: { ignore: ["**/index.html"] } }
+        { from: "public", globOptions: { ignore: ["**/index.html"] } }
       ]
     })
   ],
@@ -31,6 +31,10 @@ module.exports = {
             presets: ['@babel/preset-env']
           },
         },
+      },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader']
       },
     ],
   },

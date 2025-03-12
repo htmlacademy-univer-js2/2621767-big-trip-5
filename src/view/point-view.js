@@ -1,4 +1,4 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import {formatEventTime} from '../utils.js';
 import {formatEventDate} from '../utils.js';
 import {getDestinationById} from '../utils.js';
@@ -67,23 +67,23 @@ function createPointRouteTemplate(event) {
            </li>`;
 }
 
-export default class PointRoute {
-  constructor({event}) {
-    this.event = event;
+export default class PointRoute extends AbstractView {
+  #event = null;
+  #handleEditClick = null;
+
+  constructor({event, onEditClick}) {
+    super();
+    this.#event = event;
+    this.#handleEditClick = onEditClick;
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
   }
 
-  getTemplate() {
-    return createPointRouteTemplate(this.event);
+  get template() {
+    return createPointRouteTemplate(this.#event);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }

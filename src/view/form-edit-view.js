@@ -1,4 +1,4 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import {formatEventTime} from '../utils.js';
 import {formatFormEventDate} from '../utils.js';
 import {getDestinationById} from '../utils.js';
@@ -146,23 +146,25 @@ function makeFormEditingTemplate(event) {
             </li>`;
 }
 
-export default class FormEditing {
-  constructor({event}) {
-    this.event = event;
+export default class FormEditing extends AbstractView {
+  #event = null;
+  #handleFormSubmit = null;
+
+  constructor({event, onFormSubmit}) {
+    super();
+    this.#event = event;
+    this.#handleFormSubmit = onFormSubmit;
+
+    this.element.querySelector('form').addEventListener('submit', this.#formCloseHandler);
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#formCloseHandler);
   }
 
-  getTemplate() {
-    return makeFormEditingTemplate(this.event);
+  get template() {
+    return makeFormEditingTemplate(this.#event);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
+  #formCloseHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit();
+  };
 }
