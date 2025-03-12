@@ -1,17 +1,17 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import {formatEventTime} from '../utils.js';
 import {formatFormEventDate} from '../utils.js';
 import {getDestinationById} from '../utils.js';
 import {getOffersByType} from '../utils.js';
 
 function makeFormEditingTemplate(event) {
-  const {startDate, endDate, type, price} = event;
+  const {dateFrom, dateTo, basePrice, type } = event;
 
-  const startTime = formatEventTime(startDate);
-  const endTime = formatEventTime(endDate);
+  const startTime = formatEventTime(dateFrom);
+  const endTime = formatEventTime(dateTo);
 
-  const formStartDate = formatFormEventDate(startDate);
-  const formEndDate = formatFormEventDate(endDate);
+  const formStartDate = formatFormEventDate(dateFrom);
+  const formEndDate = formatFormEventDate(dateTo);
 
   const destination = getDestinationById(event);
   const destinationName = destination.cityName;
@@ -121,7 +121,7 @@ function makeFormEditingTemplate(event) {
                       <span class="visually-hidden">Price</span>
                       &euro;
                     </label>
-                    <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${price}">
+                    <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${basePrice}">
                   </div>
 
                   <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
@@ -146,23 +146,25 @@ function makeFormEditingTemplate(event) {
             </li>`;
 }
 
-export default class FormEditing {
-  constructor({event}) {
-    this.event = event;
+export default class FormEditing extends AbstractView {
+  #event = null;
+  #handleFormSubmit = null;
+
+  constructor({event, onFormSubmit}) {
+    super();
+    this.#event = event;
+    this.#handleFormSubmit = onFormSubmit;
+
+    this.element.querySelector('form').addEventListener('submit', this.#formCloseHandler);
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#formCloseHandler);
   }
 
-  getTemplate() {
-    return makeFormEditingTemplate(this.event);
+  get template() {
+    return makeFormEditingTemplate(this.#event);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
+  #formCloseHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit();
+  };
 }

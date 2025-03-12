@@ -1,4 +1,4 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import {formatEventTime} from '../utils.js';
 import {formatEventDate} from '../utils.js';
 import {getDestinationById} from '../utils.js';
@@ -6,12 +6,12 @@ import {getOffersByType} from '../utils.js';
 import {formatEventDuration} from '../utils.js';
 
 function createPointRouteTemplate(event) {
-  const {startDate, endDate, type, price, isFavourite} = event;
+  const {dateFrom, dateTo, basePrice, isFavourite, type} = event;
 
-  const startTime = formatEventTime(startDate);
-  const endTime = formatEventTime(endDate);
+  const startTime = formatEventTime(dateFrom);
+  const endTime = formatEventTime(dateTo);
 
-  const date = formatEventDate(startDate);
+  const date = formatEventDate(dateFrom);
 
   const destination = getDestinationById(event);
   const destinationName = destination.cityName;
@@ -28,7 +28,7 @@ function createPointRouteTemplate(event) {
     `)
     .join('');
 
-  const duration = formatEventDuration(startDate, endDate);
+  const duration = formatEventDuration(dateFrom, dateTo);
 
   const isFavouriteEvent = isFavourite ? 'event__favorite-btn--active' : '';
 
@@ -48,7 +48,7 @@ function createPointRouteTemplate(event) {
                   <p class="event__duration">${duration}</p>
                 </div>
                 <p class="event__price">
-                  &euro;&nbsp;<span class="event__price-value">${price}</span>
+                  &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
                 </p>
                 <h4 class="visually-hidden">Offers:</h4>
                 <ul class="event__selected-offers">
@@ -67,23 +67,23 @@ function createPointRouteTemplate(event) {
            </li>`;
 }
 
-export default class PointRoute {
-  constructor({event}) {
-    this.event = event;
+export default class PointRoute extends AbstractView {
+  #event = null;
+  #handleEditClick = null;
+
+  constructor({event, onEditClick}) {
+    super();
+    this.#event = event;
+    this.#handleEditClick = onEditClick;
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
   }
 
-  getTemplate() {
-    return createPointRouteTemplate(this.event);
+  get template() {
+    return createPointRouteTemplate(this.#event);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }
