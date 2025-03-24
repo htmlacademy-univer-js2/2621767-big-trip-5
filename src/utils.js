@@ -50,6 +50,16 @@ function formatEventDuration(startDate, endDate) {
   return `${durationInDays}D ${durationInHours}H ${durationInMinutes}M`;
 }
 
+function isEscapeKey(evt) {
+  return evt.key === 'Escape';
+}
+
+const isPastEvent = (date) => dayjs(date).isBefore(dayjs());
+
+const isPresentEvent = (dateFrom, dateTo) => dayjs(dateFrom).isBefore(dayjs()) && dayjs(dateTo).isAfter(dayjs());
+
+const isFutureEvent = (date) => dayjs(date).isAfter(dayjs());
+
 export {
   getRandomArrayElement,
   formatEventDate,
@@ -57,5 +67,9 @@ export {
   getDestinationById,
   getOffersByType,
   formatEventDuration,
-  formatFormEventDate
+  formatFormEventDate,
+  isEscapeKey,
+  isFutureEvent,
+  isPastEvent,
+  isPresentEvent
 };
