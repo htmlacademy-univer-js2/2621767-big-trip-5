@@ -1,24 +1,32 @@
-import { render } from '../framework/render.js';
-import { replace } from '../framework/render.js';
-import FiltersView from '../view/filters-view';
-import FormEditing from '../view/form-edit-view';
-import PointEdit from '../view/point-edit-view';
-import Point from '../view/point-view';
+import { render } from '../framework/render';
+import Filters from '../view/filters-view';
+import PointRouteList from '../view/point-edit-view';
 import SortingView from '../view/sorting-view';
 import EmptyListView from '../view/empty-list-view';
-import { isEscapeKey } from '../utils';
+import EventPresenter from './event-presenter.js';
 import { generateFilter } from '../mock/filter-mock';
+import { updateItem } from '../utils.js';
 
 export default class BoardPresenter {
-  #eventListComponent = new PointEdit();
+  #eventListComponent = new PointRouteList();
   #eventsContainer = null;
   #filterContainer = null;
   #eventsModel = null;
   #boardEvents = [];
+  #eventPresenters = new Map();
 
-  constructor({eventsModel}) {
-    this.#eventsContainer = document.querySelector('.trip-events');
-    this.#filterContainer = document.querySelector('.trip-controls__filters');
+  #onModeChange = () => {
+    this.#eventPresenters.forEach((presenter) => presenter.resetView());
+  };
+
+  #onFavoriteBtnClick = (updatedPoint) => {
+    this.#boardEvents = updateItem(this.#boardEvents, updatedPoint);
+    this.#eventPresenters.get(updatedPoint.id).init(updatedPoint);
+  };
+
+  constructor({eventsContainer, filterContainer, eventsModel}) {
+    this.#eventsContainer = eventsContainer;
+    this.#filterContainer = filterContainer;
     this.#eventsModel = eventsModel;
   }
 
@@ -28,7 +36,7 @@ export default class BoardPresenter {
     const currentFilters = generateFilter(this.#boardEvents);
 
     if (this.#boardEvents.length > 0) {
-      render(new FiltersView({currentFilters}), this.#filterContainer);
+      render(new Filters({currentFilters}), this.#filterContainer);
       render(new SortingView(), this.#eventsContainer);
       render(this.#eventListComponent, this.#eventsContainer);
 
@@ -39,38 +47,13 @@ export default class BoardPresenter {
   }
 
   #renderEvent(event) {
-    const onEscKeyDownClose = (evt) => {
-      if (isEscapeKey(evt)) {
-        evt.preventDefault();
-        replaceFormToEvent();
-        document.removeEventListener('keydown', onEscKeyDownClose);
-      }
-    };
-
-    const eventComponent = new Point({
-      event,
-      onEditClick: () => {
-        replaceEventToForm();
-        document.addEventListener('keydown', onEscKeyDownClose);
-      }
+    const eventPresenter = new EventPresenter({
+      eventListContainer: this.#eventListComponent.element,
+      onDataChange: this.#onFavoriteBtnClick,
+      onViewChange: this.#onModeChange
     });
 
-    const eventEditComponent = new FormEditing({
-      event,
-      onFormSubmit: () => {
-        replaceFormToEvent();
-        document.removeEventListener('keydown', onEscKeyDownClose);
-      }
-    });
-
-    function replaceEventToForm() {
-      replace(eventEditComponent, eventComponent);
-    }
-
-    function replaceFormToEvent() {
-      replace(eventComponent, eventEditComponent);
-    }
-
-    render(eventComponent, this.#eventListComponent.element);
+    eventPresenter.init(event);
+    this.#eventPresenters.set(event.id, eventPresenter);
   }
 }

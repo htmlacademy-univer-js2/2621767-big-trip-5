@@ -67,15 +67,18 @@ function createPointRouteTemplate(event) {
            </li>`;
 }
 
-export default class PointRoute extends AbstractView {
+export default class Point extends AbstractView {
   #event = null;
   #handleEditClick = null;
+  #handleFavoriteClick = null;
 
-  constructor({event, onEditClick}) {
+  constructor({event, onEditClick, onFavoriteClick}) {
     super();
     this.#event = event;
     this.#handleEditClick = onEditClick;
+    this.#handleFavoriteClick = onFavoriteClick;
     this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
+    this.element.querySelector('.event__favorite-btn').addEventListener('click', this.#favoriteClickHandler);
   }
 
   get template() {
@@ -85,5 +88,10 @@ export default class PointRoute extends AbstractView {
   #editClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleEditClick();
+  };
+
+  #favoriteClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFavoriteClick();
   };
 }
