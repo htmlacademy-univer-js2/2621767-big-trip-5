@@ -16,7 +16,6 @@ export default class EventPresenter {
     if (isEscapeKey(event)) {
       event.preventDefault();
       this.#replaceFormToEvent();
-      document.removeEventListener('keydown', this.#onEscKeydown);
     }
   };
 
@@ -26,7 +25,7 @@ export default class EventPresenter {
     this.#handleViewChange = onViewChange;
   }
 
-  init (event) {
+  init(event) {
     this.#event = event;
 
     const prevEventComponent = this.#eventComponent;
@@ -34,34 +33,22 @@ export default class EventPresenter {
 
     this.#eventComponent = new Point({
       event: this.#event,
-      onEditClick: () => {
-        this.#replaceEventToForm();
-        document.addEventListener('keydown', this.#onEscKeydown);
-      },
+      onEditClick: this.#replaceEventToForm,
       onFavoriteClick: this.#handleFavoriteClick
     });
 
     this.#eventEditComponent = new FormEditing({
       event: this.#event,
-      onFormSubmit: () => {
-        this.#replaceFormToEvent();
-        document.removeEventListener('keydown', this.#onEscKeydown);
-      }
+      onFormSubmit: this.#replaceFormToEvent,
+      onRollButtonClick: this.#replaceFormToEvent
     });
 
-    if (prevEventComponent === null || prevEventEditComponent === null) {
+    if (!prevEventComponent || !prevEventEditComponent) {
       render(this.#eventComponent, this.#eventListContainer);
       return;
     }
 
-    if (this.#eventListContainer.contains(prevEventComponent.element)) {
-      replace(this.#eventComponent, prevEventComponent);
-    }
-
-    if (this.#eventListContainer.contains(prevEventEditComponent.element)) {
-      replace(this.#eventEditComponent, prevEventEditComponent);
-    }
-
+    replace(this.#eventComponent, prevEventComponent);
     remove(prevEventComponent);
     remove(prevEventEditComponent);
   }
@@ -72,20 +59,20 @@ export default class EventPresenter {
     }
   }
 
-  #replaceEventToForm() {
+  #replaceEventToForm = () => {
     replace(this.#eventEditComponent, this.#eventComponent);
     document.addEventListener('keydown', this.#onEscKeydown);
     this.#handleViewChange();
     this.#isEventEditing = true;
-  }
+  };
 
-  #replaceFormToEvent() {
+  #replaceFormToEvent = () => {
     replace(this.#eventComponent, this.#eventEditComponent);
-    document.addEventListener('keydown', this.#onEscKeydown);
+    document.removeEventListener('keydown', this.#onEscKeydown);
     this.#isEventEditing = false;
-  }
+  };
 
   #handleFavoriteClick = () => {
-    this.#handleDataChange({...this.#event, isFavorite: !this.#event.isFavorite});
+    this.#handleDataChange({...this.#event, isFavourite: !this.#event.isFavourite});
   };
 }

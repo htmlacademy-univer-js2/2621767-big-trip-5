@@ -61,7 +61,7 @@ const isPresentEvent = (dateFrom, dateTo) => dayjs(dateFrom).isBefore(dayjs()) &
 const isFutureEvent = (date) => dayjs(date).isAfter(dayjs());
 
 function updateItem(items, update) {
-  return items.map((item) => item.id === update.id ? update : item);
+  return items.map((item) => item.id === update.id ? {...update} : item);
 }
 
 export {
