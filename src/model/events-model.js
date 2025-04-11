@@ -6,6 +6,6 @@ export default class EventsModel {
   #events = Array.from({length: EVENT_COUNT}, getRandomEvent);
 
   get events() {
-    return this.#events;
+    return [...this.#events];
   }
 }

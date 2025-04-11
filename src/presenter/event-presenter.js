@@ -2,6 +2,7 @@ import { render, replace, remove } from '../framework/render';
 import FormEditing from '../view/form-edit-view';
 import Point from '../view/point-view';
 import { isEscapeKey } from '../utils';
+import { MODE } from '../const';
 
 export default class EventPresenter {
   #eventListContainer = null;
@@ -10,7 +11,7 @@ export default class EventPresenter {
   #event = null;
   #handleDataChange = null;
   #handleViewChange = null;
-  #isEventEditing = false;
+  #mode = MODE.DEFAULT;
 
   #onEscKeydown = (event) => {
     if (isEscapeKey(event)) {
@@ -19,7 +20,7 @@ export default class EventPresenter {
     }
   };
 
-  constructor({eventListContainer, onDataChange, onViewChange}) {
+  constructor({ eventListContainer, onDataChange, onViewChange }) {
     this.#eventListContainer = eventListContainer;
     this.#handleDataChange = onDataChange;
     this.#handleViewChange = onViewChange;
@@ -43,18 +44,31 @@ export default class EventPresenter {
       onRollButtonClick: this.#replaceFormToEvent
     });
 
-    if (!prevEventComponent || !prevEventEditComponent) {
-      render(this.#eventComponent, this.#eventListContainer);
+    if (prevEventComponent === null || prevEventEditComponent === null) {
+      render(this.#eventComponent, this.#eventListContainer.element);
       return;
     }
 
-    replace(this.#eventComponent, prevEventComponent);
+    if (this.#mode === MODE.DEFAULT) {
+      replace(this.#eventComponent, prevEventComponent);
+    }
+
+    if (this.#mode === MODE.EDITING) {
+      replace(this.#eventEditComponent, prevEventEditComponent);
+    }
+
     remove(prevEventComponent);
     remove(prevEventEditComponent);
   }
 
+  destroy() {
+    remove(this.#eventComponent);
+    remove(this.#eventEditComponent);
+    document.removeEventListener('keydown', this.#onEscKeydown);
+  }
+
   resetView() {
-    if (this.#isEventEditing) {
+    if (this.#mode !== MODE.DEFAULT) {
       this.#replaceFormToEvent();
     }
   }
@@ -63,16 +77,16 @@ export default class EventPresenter {
     replace(this.#eventEditComponent, this.#eventComponent);
     document.addEventListener('keydown', this.#onEscKeydown);
     this.#handleViewChange();
-    this.#isEventEditing = true;
+    this.#mode = MODE.EDITING;
   };
 
   #replaceFormToEvent = () => {
     replace(this.#eventComponent, this.#eventEditComponent);
     document.removeEventListener('keydown', this.#onEscKeydown);
-    this.#isEventEditing = false;
+    this.#mode = MODE.DEFAULT;
   };
 
   #handleFavoriteClick = () => {
-    this.#handleDataChange({...this.#event, isFavourite: !this.#event.isFavourite});
+    this.#handleDataChange({ ...this.#event, isFavorite: !this.#event.isFavorite });
   };
 }

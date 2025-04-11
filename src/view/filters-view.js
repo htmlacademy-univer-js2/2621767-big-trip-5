@@ -13,9 +13,9 @@ const createFiltersTemplate = (filters) => `<form class="trip-filters" action="#
 export default class Filters extends AbstractView {
   #filters = null;
 
-  constructor({currentFilters = []} = {}) {
+  constructor({filters} = {}) {
     super();
-    this.#filters = currentFilters;
+    this.#filters = filters;
   }
 
   get template() {
