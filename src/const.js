@@ -14,4 +14,15 @@ const filter = {
   [filterType.PAST]: (points) => points.filter((point) => isPastEvent(point.dateTo))
 };
 
-export {filter};
+const SORT_TYPES = {
+  DAY: 'day',
+  TIME: 'time',
+  PRICE: 'price',
+};
+
+const MODE = {
+  DEFAULT: 'DEFAULT',
+  EDITING: 'EDITING',
+};
+
+export {filter, SORT_TYPES, MODE};
