@@ -1,4 +1,6 @@
-const mockOffers = [
+import {getRandomArrayElement, getRandomElementsOfArray, getOffersByType} from '../utils';
+
+const OFFERS = [
   {
     'type': 'taxi',
     'offers': [
@@ -111,4 +113,23 @@ const mockOffers = [
   }
 ];
 
-export {mockOffers};
+const OFFERS_MAX_NUMBER = 2;
+const OFFERS_MIN_NUMBER = 0;
+
+const getRandomOffersIDs = (eventType) => {
+  const offers = getOffersByType(eventType, OFFERS); // Now returns [] if no match
+
+  if (!offers || !offers.length) { // Extra safety check
+    return [];
+  }
+
+  const offerIDs = offers.map((offer) => offer.id);
+  const maxPossibleOffers = Math.min(OFFERS_MAX_NUMBER, offerIDs.length);
+
+  return getRandomElementsOfArray(
+    offerIDs,
+    getRandomArrayElement(OFFERS_MIN_NUMBER, maxPossibleOffers)
+  );
+};
+
+export { getRandomOffersIDs, OFFERS };

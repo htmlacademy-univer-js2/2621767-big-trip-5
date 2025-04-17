@@ -6,6 +6,8 @@ import { MODE } from '../const';
 
 export default class EventPresenter {
   #eventListContainer = null;
+  #destinations = null;
+  #offers = null;
   #eventComponent = null;
   #eventEditComponent = null;
   #event = null;
@@ -20,31 +22,42 @@ export default class EventPresenter {
     }
   };
 
-  constructor({ eventListContainer, onDataChange, onViewChange }) {
+  constructor({ destinations, offers, eventListContainer, onDataChange, onViewChange }) {
+    this.#destinations = destinations;
+    this.#offers = offers;
     this.#eventListContainer = eventListContainer;
     this.#handleDataChange = onDataChange;
     this.#handleViewChange = onViewChange;
   }
 
   init(event) {
-    this.#event = event;
-
     const prevEventComponent = this.#eventComponent;
     const prevEventEditComponent = this.#eventEditComponent;
 
+    this.#event = {
+      ...event,
+      type: event.type || 'flight',
+      destination: event.destination || '',
+      offers: event.offers || []
+    };
+
     this.#eventComponent = new Point({
       event: this.#event,
+      destinations: this.#destinations,
+      offers: this.#offers,
       onEditClick: this.#replaceEventToForm,
       onFavoriteClick: this.#handleFavoriteClick
     });
 
     this.#eventEditComponent = new FormEditing({
       event: this.#event,
-      onFormSubmit: this.#replaceFormToEvent,
-      onRollButtonClick: this.#replaceFormToEvent
+      destinations: this.#destinations,
+      offers: this.#offers,
+      onRollButtonClick: this.#replaceFormToEvent,
+      onSubmitButtonClick: this.#handleFormSubmit
     });
 
-    if (prevEventComponent === null || prevEventEditComponent === null) {
+    if (!prevEventComponent || !prevEventEditComponent) {
       render(this.#eventComponent, this.#eventListContainer.element);
       return;
     }
@@ -55,6 +68,7 @@ export default class EventPresenter {
 
     if (this.#mode === MODE.EDITING) {
       replace(this.#eventEditComponent, prevEventEditComponent);
+      this.#mode = MODE.DEFAULT; // Reset mode after replacement
     }
 
     remove(prevEventComponent);
@@ -62,8 +76,12 @@ export default class EventPresenter {
   }
 
   destroy() {
-    remove(this.#eventComponent);
-    remove(this.#eventEditComponent);
+    if (this.#eventComponent) {
+      remove(this.#eventComponent);
+    }
+    if (this.#eventEditComponent) {
+      remove(this.#eventEditComponent);
+    }
     document.removeEventListener('keydown', this.#onEscKeydown);
   }
 
@@ -73,20 +91,30 @@ export default class EventPresenter {
     }
   }
 
+  #handleFormSubmit = (updatedEvent) => {
+    this.#handleDataChange(updatedEvent);
+  };
+
   #replaceEventToForm = () => {
+    this.#handleViewChange();
     replace(this.#eventEditComponent, this.#eventComponent);
     document.addEventListener('keydown', this.#onEscKeydown);
-    this.#handleViewChange();
     this.#mode = MODE.EDITING;
   };
 
   #replaceFormToEvent = () => {
+    if (this.#eventEditComponent) {
+      this.#eventEditComponent.reset(this.#event);
+    }
     replace(this.#eventComponent, this.#eventEditComponent);
     document.removeEventListener('keydown', this.#onEscKeydown);
     this.#mode = MODE.DEFAULT;
   };
 
   #handleFavoriteClick = () => {
-    this.#handleDataChange({ ...this.#event, isFavorite: !this.#event.isFavorite });
+    this.#handleDataChange({
+      ...this.#event,
+      isFavorite: !this.#event.isFavorite
+    });
   };
 }

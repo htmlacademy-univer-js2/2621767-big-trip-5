@@ -1,60 +1,100 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import {formatEventTime} from '../utils.js';
-import {formatEventDate} from '../utils.js';
-import {getDestinationById} from '../utils.js';
-import {getOffersByType} from '../utils.js';
-import {formatEventDuration} from '../utils.js';
+import {
+  formatEventTime,
+  formatEventDate,
+  getOffersByType,
+  formatEventDuration,
+  getOffersById,
+  getDestinationByCity,
+  getDestinationById
+} from '../utils.js';
 
-function createPointRouteTemplate(event) {
-  const {dateFrom, dateTo, basePrice, isFavorite, type} = event;
+function createOfferTemplate(offerId, offers) {
+  const offer = getOffersById(offerId, offers);
+  if (!offer) return ''; // Skip if offer not found
 
+  return `<li class="event__offer">
+            <span class="event__offer-title">${offer.title}</span>
+            &plus;&euro;&nbsp;
+            <span class="event__offer-price">${offer.price}</span>
+          </li>`;
+}
+
+function createPointRouteTemplate(event, destinations, allOffers) {
+  // Safely destructure with fallbacks
+  console.log('Current event:', event); // Добавьте эту строку
+  console.log('Available destinations:', destinations);
+  const {
+    destination = '',
+    dateFrom = new Date(),
+    dateTo = new Date(),
+    basePrice = 0,
+    offers = [],
+    isFavorite = false,
+    type = event.type
+  } = event;
+
+  const eventType = validateEventType(type);
+
+  function validateEventType(objecttype) {
+    const validTypes = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
+    const defaultType = 'flight';
+
+    if (!objecttype) {
+      console.warn('Missing event type, using default');
+      return defaultType;
+    }
+
+    const normalizedType = String(objecttype).toLowerCase();
+    return validTypes.includes(normalizedType) ? normalizedType : defaultType;
+  }
+
+
+  // Safely get destination info
+  const pointDestination = destinations.find((dest) => dest.id === destination) || {
+    id: destination.id,
+    city: destination.city,
+    description: destination.description,
+    pictures: destination.pictures,
+  };
+
+  // Format dates and times
+  const startDate = formatEventDate(dateFrom);
+  const endDate = formatEventDate(dateTo);
   const startTime = formatEventTime(dateFrom);
   const endTime = formatEventTime(dateTo);
 
-  const date = formatEventDate(dateFrom);
-
-  const destination = getDestinationById(event);
-  const destinationName = destination.cityName;
-
-  const offers = getOffersByType(event);
-  const selectedOffers = offers
-    .filter((offer) => event.offers.includes(offer.id))
-    .map((offer) => `
-      <li class="event__offer">
-        <span class="event__offer-title">${offer.title}</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">${offer.price}</span>
-      </li>
-    `)
-    .join('');
-
   const duration = formatEventDuration(dateFrom, dateTo);
-
-  const isFavoriteEvent = isFavorite ? 'event__favorite-btn--active' : '';
+  const availableOffers = getOffersByType(eventType, allOffers) || [];
+  const favoriteClass = isFavorite ? 'event__favorite-btn--active' : '';
 
   return `<li class="trip-events__item">
               <div class="event">
-                <time class="event__date" datetime="2019-03-18">${date}</time>
+                <time class="event__date" datetime="${dateFrom.toISOString()}">${startDate}</time>
                 <div class="event__type">
-                  <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
+                  <img class="event__type-icon" width="42" height="42"
+                       src="img/icons/${eventType}.png"
+                       alt="Event type icon">
                 </div>
-                <h3 class="event__title">${type} ${destinationName}</h3>
+                <h3 class="event__title">${eventType} ${pointDestination.city}</h3>
                 <div class="event__schedule">
                   <p class="event__time">
-                    <time class="event__start-time" datetime="2019-03-18T10:30">${startTime}</time>
+                    <time class="event__start-time" datetime="${dateFrom.toISOString()}">${startTime}</time>
                     &mdash;
-                    <time class="event__end-time" datetime="2019-03-18T11:00">${endTime}</time>
+                    <time class="event__end-time" datetime="${dateTo.toISOString()}">${endTime}</time>
                   </p>
                   <p class="event__duration">${duration}</p>
                 </div>
                 <p class="event__price">
                   &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
                 </p>
+                ${availableOffers.length > 0 ? `
                 <h4 class="visually-hidden">Offers:</h4>
                 <ul class="event__selected-offers">
-                  ${selectedOffers}
+                  ${offers.map((offerId) => createOfferTemplate(offerId, availableOffers)).join('')}
                 </ul>
-                <button class="event__favorite-btn ${isFavoriteEvent}" type="button">
+                ` : ''}
+                <button class="event__favorite-btn ${favoriteClass}" type="button">
                   <span class="visually-hidden">Add to favorite</span>
                   <svg class="event__favorite-icon" width="28" height="28" viewBox="0 0 28 28">
                     <path d="M14 21l-8.22899 4.3262 1.57159-9.1631L.685209 9.67376 9.8855 8.33688 14 0l4.1145 8.33688 9.2003 1.33688-6.6574 6.48934 1.5716 9.1631L14 21z"/>
@@ -69,20 +109,26 @@ function createPointRouteTemplate(event) {
 
 export default class Point extends AbstractView {
   #event = null;
+  #destinations = null;
+  #offers = null;
   #handleEditClick = null;
   #handleFavoriteClick = null;
 
-  constructor({event, onEditClick, onFavoriteClick}) {
+  constructor({event, destinations, offers, onEditClick, onFavoriteClick}) {
     super();
     this.#event = event;
+    this.#destinations = destinations;
+    this.#offers = offers;
     this.#handleEditClick = onEditClick;
     this.#handleFavoriteClick = onFavoriteClick;
-    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
-    this.element.querySelector('.event__favorite-btn').addEventListener('click', this.#favoriteClickHandler);
+
+    // Add event listeners safely
+    this.element.querySelector('.event__rollup-btn')?.addEventListener('click', this.#editClickHandler);
+    this.element.querySelector('.event__favorite-btn')?.addEventListener('click', this.#favoriteClickHandler);
   }
 
   get template() {
-    return createPointRouteTemplate(this.#event);
+    return createPointRouteTemplate(this.#event, this.#destinations, this.#offers);
   }
 
   #editClickHandler = (evt) => {

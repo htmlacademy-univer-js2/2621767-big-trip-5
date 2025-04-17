@@ -1,72 +1,35 @@
-import { nanoid } from 'nanoid';
-import {getRandomArrayElement} from '../utils.js';
+import { EVENT_TYPES } from '../const.js';
+import { getRandomArrayElement, getRandomElementsOfArray, getRandomDates } from '../utils.js';
+import { getRandomOffersIDs } from './offers-mock';
+import { getRandomDestination } from './destination-mock';
 
-const eventTemplates = [
-  {
-    basePrice: 80,
-    dateFrom: new Date('2025-02-18T09:30'),
-    dateTo: new Date('2025-02-18T11:30'),
-    destination: 3,
-    isFavorite: true,
-    offers: [1,4],
-    type: 'flight',
-  },
-  {
-    basePrice: 110,
-    dateFrom: new Date('2025-02-20T22:30'),
-    dateTo: new Date('2025-02-22T03:00'),
-    destination: 2,
-    isFavorite: false,
-    offers: [1],
-    type: 'flight',
-  },
-  {
-    basePrice: 10,
-    dateFrom: new Date('2025-02-22T03:00'),
-    dateTo: new Date('2025-02-22T04:00'),
-    destination: 2,
-    isFavorite: true,
-    offers: [1,3,5],
-    type: 'check-in',
-  },
-  {
-    basePrice: 35,
-    dateFrom: new Date('2025-02-22T18:00'),
-    dateTo: new Date('2025-02-22T23:30'),
-    destination: 1,
-    isFavorite: false,
-    offers: [1, 2],
-    type: 'taxi',
-  },
-  {
-    basePrice: 1500,
-    dateFrom: new Date('2025-02-23T12:00'),
-    dateTo: new Date('2025-02-23T14:30'),
-    destination: 1,
-    isFavorite: true,
-    offers: [3],
-    type: 'restaurant',
-  },
-  {
-    basePrice: 50,
-    dateFrom: new Date('2025-02-25T06:00'),
-    dateTo: new Date('2025-02-25T12:00'),
-    destination: 4,
-    isFavorite: true,
-    offers: [2,3,5],
-    type: 'taxi',
-  }
-];
+const MIN_COST = 2000;
+const MAX_COST = 5000;
+const POINTS_MAX_COUNT = 9;
 
-function getRandomEvent() {
-  const template = getRandomArrayElement(eventTemplates);
+const getRandomEvent = () => {
+  const twoDates = getRandomDates();
+  const eventType = EVENT_TYPES[getRandomArrayElement(0, EVENT_TYPES.length - 1)];
+  const destination = getRandomDestination();
+
+  // Проверяем, что destination существует и имеет id
+  const destinationId = destination?.id || crypto.randomUUID();
+
+  // Гарантируем, что basePrice будет числом
+  const basePrice = getRandomArrayElement(MIN_COST, MAX_COST) || MIN_COST;
 
   return {
-    ...template,
-    id: nanoid(),
-    dateFrom: new Date(template.dateFrom.getTime()),
-    dateTo: new Date(template.dateTo.getTime())
+    id: crypto.randomUUID(),
+    basePrice: basePrice,
+    dateFrom: twoDates[0],
+    dateTo: twoDates[1],
+    destination: destinationId,
+    isFavorite: Boolean(getRandomArrayElement(0, 1)),
+    offers: getRandomOffersIDs(eventType),
+    type: eventType
   };
-}
+};
 
-export {getRandomEvent};
+const POINTS = Array.from({length: POINTS_MAX_COUNT}, getRandomEvent);
+
+export {POINTS};

@@ -12,23 +12,38 @@ export default class BoardPresenter {
   #eventListComponent = new PointRouteList();
   #eventsContainer = null;
   #filterContainer = null;
-  #eventsModel = null;
+  #pointsListModel = null;
+  #emptyPointListComponent = null;
+  #destinations = null;
+  #offers = null;
   #boardEvents = [];
   #filters = [];
   #eventPresenters = new Map();
   #sortComponent = null;
   #currentSortType = SORT_TYPES.DAY;
 
-  constructor({ eventsContainer, filterContainer, eventsModel }) {
+  constructor({ eventsContainer, filterContainer, pointsListModel }) {
     this.#eventsContainer = eventsContainer;
     this.#filterContainer = filterContainer;
-    this.#eventsModel = eventsModel;
+    this.#pointsListModel = pointsListModel;
   }
 
+  // board-presenter.js
   init() {
-    this.#boardEvents = [...this.#eventsModel.events];
-    this.#filters = generateFilter(this.#boardEvents);
+    // Add proper null checks
+    this.#boardEvents = Array.isArray(this.#pointsListModel?.points)
+      ? [...this.#pointsListModel.points]
+      : [];
 
+    this.#offers = Array.isArray(this.#pointsListModel?.offers)
+      ? [...this.#pointsListModel.offers]
+      : [];
+
+    this.#destinations = Array.isArray(this.#pointsListModel?.destinations)
+      ? [...this.#pointsListModel.destinations]
+      : [];
+
+    this.#filters = generateFilter(this.#boardEvents);
     this.#renderFilters();
     this.#renderSort();
     this.#renderEventsList();
@@ -36,11 +51,12 @@ export default class BoardPresenter {
 
   #renderEvent(event) {
     const eventPresenter = new EventPresenter({
+      destinations: this.#destinations, // Use the stored destinations
+      offers: this.#offers,
       eventListContainer: this.#eventListComponent,
       onDataChange: this.#onFavoriteBtnClick,
       onViewChange: this.#onModeChange
     });
-
     eventPresenter.init(event);
     this.#eventPresenters.set(event.id, eventPresenter);
   }
@@ -57,6 +73,9 @@ export default class BoardPresenter {
   #clearEventsList() {
     this.#eventPresenters.forEach((presenter) => presenter.destroy());
     this.#eventPresenters.clear();
+    if (this.#emptyPointListComponent) {
+      remove(this.#emptyPointListComponent);
+    }
   }
 
   #onSortTypeChange = (sortType) => {
@@ -110,7 +129,8 @@ export default class BoardPresenter {
   }
 
   #renderNoEvents() {
-    render(new EmptyListView(), this.#eventListComponent.element);
+    this.#emptyPointListComponent = new EmptyListView();
+    render(this.#emptyPointListComponent, this.#eventListComponent.element);
   }
 
   #renderFilters() {
