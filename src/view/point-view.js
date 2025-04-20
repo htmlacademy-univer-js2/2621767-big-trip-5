@@ -22,11 +22,6 @@ function createPointRouteTemplate(event, destinations, allOffers) {
     const validTypes = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
     const defaultType = 'flight';
 
-    if (!objecttype) {
-      console.warn('Missing event type, using default');
-      return defaultType;
-    }
-
     const normalizedType = String(objecttype).toLowerCase();
     return validTypes.includes(normalizedType) ? normalizedType : defaultType;
   }
@@ -39,7 +34,6 @@ function createPointRouteTemplate(event, destinations, allOffers) {
   };
 
   const startDate = formatEventDate(dateFrom);
-  const endDate = formatEventDate(dateTo);
   const startTime = formatEventTime(dateFrom);
   const endTime = formatEventTime(dateTo);
   const duration = formatEventDuration(dateFrom, dateTo);

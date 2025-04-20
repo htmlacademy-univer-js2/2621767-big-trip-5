@@ -55,9 +55,9 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
                   <div class="event__type-list">
                     <fieldset class="event__type-group">
                       <legend class="visually-hidden">Event type</legend>
-                      ${EVENT_TYPES.map((type) => `<div class="event__type-item">
-                        <input id="event-type-${type}-1" class="event__${type}-input  visually-hidden" type="radio" name="event-type" value="${type}" ${pointTypeIsChecked(type)}>
-                        <label class="event__type-label  event__type-label--${type}" for="event-type-${type}-1">${type}</label>
+                      ${EVENT_TYPES.map((eventType) => `<div class="event__type-item">
+                        <input id="event-type-${eventType}-1" class="event__${eventType}-input  visually-hidden" type="radio" name="event-type" value="${eventType}" ${pointTypeIsChecked(eventType)}>
+                        <label class="event__type-label  event__type-label--${eventType}" for="event-type-${eventType}-1">${eventType}</label>
                       </div>`).join('')}
                     </fieldset>
                   </div>
@@ -171,15 +171,14 @@ export default class FormEditing extends AbstractStatefulView {
     const offerId = event.target.value;
     const currentOffers = [...this._state.event.offers];
 
-    // Нормализуем ID оффера (число или строка)
     const normalizedId = isNaN(Number(offerId)) ? offerId : Number(offerId);
 
     this._setState({
       event: {
         ...this._state.event,
         offers: currentOffers.includes(normalizedId)
-          ? currentOffers.filter((id) => id !== normalizedId) // Удаляем если уже есть
-          : [...currentOffers, normalizedId] // Добавляем если нет
+          ? currentOffers.filter((id) => id !== normalizedId)
+          : [...currentOffers, normalizedId]
       }
     });
   };
