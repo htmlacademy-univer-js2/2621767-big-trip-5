@@ -51,7 +51,7 @@ export default class BoardPresenter {
 
   #renderEvent(event) {
     const eventPresenter = new EventPresenter({
-      destinations: this.#destinations, // Use the stored destinations
+      destinations: this.#destinations,
       offers: this.#offers,
       eventListContainer: this.#eventListComponent,
       onDataChange: this.#onFavoriteBtnClick,

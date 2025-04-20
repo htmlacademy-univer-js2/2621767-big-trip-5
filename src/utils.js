@@ -16,7 +16,7 @@ const getRandomArrayElement = (min, max) => {
 
 const getRandomElementsOfArray = (array, count) => {
   if (!Array.isArray(array) || array.length === 0) {
-    return []; // или другое значение по умолчанию
+    return [];
   }
 
   const actualCount = count ?? getRandomArrayElement(1, array.length);

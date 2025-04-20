@@ -42,7 +42,10 @@ export default class EventPresenter {
     };
 
     this.#eventComponent = new Point({
-      event: this.#event,
+      event: {
+        ...this.#event,
+        offers: Array.isArray(this.#event.offers) ? this.#event.offers : []
+      },
       destinations: this.#destinations,
       offers: this.#offers,
       onEditClick: this.#replaceEventToForm,
@@ -92,7 +95,12 @@ export default class EventPresenter {
   }
 
   #handleFormSubmit = (updatedEvent) => {
-    this.#handleDataChange(updatedEvent);
+    const normalizedEvent = {
+      ...updatedEvent,
+      offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
+    };
+    this.#handleDataChange(normalizedEvent);
+    this.#replaceFormToEvent();
   };
 
   #replaceEventToForm = () => {

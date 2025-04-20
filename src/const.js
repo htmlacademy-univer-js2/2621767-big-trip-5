@@ -27,7 +27,6 @@ const MODE = {
 
 const EVENT_TYPES = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
 
-
 const CITIES = ['Berlin', 'Stuttgart', 'Minsk', 'Köln', 'London', 'Lissabon', 'Irkutsk', 'Sydney', 'Paris', 'Moscow'];
 
 const DESCRIPTIONS = [

@@ -1,5 +1,5 @@
 import { EVENT_TYPES } from '../const.js';
-import { getRandomArrayElement, getRandomElementsOfArray, getRandomDates } from '../utils.js';
+import { getRandomArrayElement, getRandomDates } from '../utils.js';
 import { getRandomOffersIDs } from './offers-mock';
 import { getRandomDestination } from './destination-mock';
 
@@ -12,10 +12,8 @@ const getRandomEvent = () => {
   const eventType = EVENT_TYPES[getRandomArrayElement(0, EVENT_TYPES.length - 1)];
   const destination = getRandomDestination();
 
-  // Проверяем, что destination существует и имеет id
   const destinationId = destination?.id || crypto.randomUUID();
 
-  // Гарантируем, что basePrice будет числом
   const basePrice = getRandomArrayElement(MIN_COST, MAX_COST) || MIN_COST;
 
   return {

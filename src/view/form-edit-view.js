@@ -1,9 +1,8 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {formatEventTime, formatFormEventDate, getDestinationById, getFullDate, getOffersByType, getDestinationByCity} from '../utils.js';
+import {getFullDate, getOffersByType} from '../utils.js';
 import { EVENT_TYPES } from '../const.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-
 
 const FLATPICKR_CONFIG = {
   dateFormat: 'd/m/y H:i',
@@ -14,10 +13,9 @@ const FLATPICKR_CONFIG = {
   'time_24hr': true,
 };
 
-
 function createOfferTemplate(offer, pointOffers) {
   const {id, title, price} = offer;
-  const isOptionChecked = pointOffers.includes(id);
+  const isOptionChecked = pointOffers.map(String).includes(String(id));
 
   return `<div class="event__offer-selector">
              <input class="event__offer-checkbox  visually-hidden" id="event-offer-${id}-1" type="checkbox" name="event-offer-${id}" value="${id}" ${isOptionChecked ? 'checked' : ''}>
@@ -32,7 +30,6 @@ function createOfferTemplate(offer, pointOffers) {
 function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
   const {id, type, destination, dateFrom, dateTo, basePrice, offers} = state.event;
 
-  // Safe destination lookup
   const pointDestination = destinations.find((dest) => dest.id === destination) || {
     id: destination.id,
     city: destination.city,
@@ -42,11 +39,6 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
   const fullStartDate = getFullDate(dateFrom);
   const fullEndDate = getFullDate(dateTo);
   const availableOffers = getOffersByType(type, allOffers);
-
-  //const startTime = formatEventTime(dateFrom);
-  //const endTime = formatEventTime(dateTo);
-  //const formStartDate = formatFormEventDate(dateFrom);
-  //const formEndDate = formatFormEventDate(dateTo);
 
   const pointTypeIsChecked = (eventType) => eventType === type ? 'checked' : '';
 
@@ -125,7 +117,6 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
           </li>`;
 }
 
-
 export default class FormEditing extends AbstractStatefulView {
   #event = null;
   #handleFormSubmit = null;
@@ -178,21 +169,18 @@ export default class FormEditing extends AbstractStatefulView {
 
   #onOffersChange = (event) => {
     const offerId = event.target.value;
-    const offers = [...this._state.event.offers];
+    const currentOffers = [...this._state.event.offers];
 
-    if (offers.includes(offerId)) {
-      offers.splice(offers.indexOf(offerId), 1);
-    } else {
-      offers.push(offerId);
-    }
+    // Нормализуем ID оффера (число или строка)
+    const normalizedId = isNaN(Number(offerId)) ? offerId : Number(offerId);
 
     this._setState({
       event: {
         ...this._state.event,
-        offers,
+        offers: currentOffers.includes(normalizedId)
+          ? currentOffers.filter((id) => id !== normalizedId) // Удаляем если уже есть
+          : [...currentOffers, normalizedId] // Добавляем если нет
       }
-    }, () => {
-      this.#formValidation(); // Вызываем проверку после обновления состояния
     });
   };
 
@@ -225,7 +213,6 @@ export default class FormEditing extends AbstractStatefulView {
     this.#datepickerStart.set('maxDate', this._state.event.endDatetime);
   };
 
-  // Update datepicker initialization
   #setDatepickers = () => {
     const [dateStartElement, dateEndElement] = this.element.querySelectorAll('.event__input--time');
 
@@ -287,14 +274,22 @@ export default class FormEditing extends AbstractStatefulView {
 
 
   #parseStateToPoint = () => {
-    return {
+    const point = {
       ...this._state.event,
       destination: this._state.event.destination || 'unknown',
       basePrice: Number(this._state.event.basePrice) || 0,
-      offers: this._state.event.offers || [],
+      offers: Array.isArray(this._state.event.offers)
+        ? this._state.event.offers
+        : [],
       dateFrom: this._state.event.dateFrom,
       dateTo: this._state.event.dateTo
     };
+
+    if (!point.offers.every((offer) => typeof offer === 'string' || typeof offer === 'number')) {
+      point.offers = [];
+    }
+
+    return point;
   };
 
   _restoreHandlers = () => {

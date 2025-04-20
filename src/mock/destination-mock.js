@@ -23,7 +23,6 @@ const getDestinationByCity = (city) => ({
   ),
 });
 
-// Создаём destinations только если CITIES не пустой
 const DESTINATIONS = CITIES?.length ? CITIES.map(getDestinationByCity) : [{
   id: crypto.randomUUID(),
   city: 'Default City',
