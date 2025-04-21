@@ -1,7 +1,5 @@
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import {mockDestinations} from './mock/destination-mock';
-import {mockOffers} from './mock/offers-mock';
 
 dayjs.extend(duration);
 
@@ -9,9 +7,22 @@ const DATE_FORMAT = 'MMM D';
 const FORM_DATE_FORMAT = 'DD/MM/YY';
 const TIME_FORMAT = 'HH:mm';
 
-function getRandomArrayElement(items) {
-  return items[Math.floor(Math.random() * items.length)];
-}
+const getRandomArrayElement = (min, max) => {
+  if (min === undefined || max === undefined) {
+    throw new Error('Both min and max must be provided');
+  }
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const getRandomElementsOfArray = (array, count) => {
+  if (!Array.isArray(array) || array.length === 0) {
+    return [];
+  }
+
+  const actualCount = count ?? getRandomArrayElement(1, array.length);
+  const shuffled = [...array].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, actualCount);
+};
 
 function formatEventTime(date) {
   return date ? dayjs(date).format(TIME_FORMAT) : '';
@@ -25,12 +36,21 @@ function formatFormEventDate(date) {
   return date ? dayjs(date).format(FORM_DATE_FORMAT) : '';
 }
 
-function getDestinationById(event) {
-  return mockDestinations.find((destination) => destination.id === event.destination);
+function getDestinationById(event, destinations) {
+  return destinations.find((destination) => destination.id === event.destination);
 }
 
-function getOffersByType(event) {
-  return mockOffers.find((offer) => offer.type === event.type).offers;
+function getDestinationByCity(city, destinations) {
+  return destinations.find((destination) => destination.city === city);
+}
+
+function getOffersByType(type, offers) {
+  const offerGroup = offers.find((offer) => offer.type === type);
+  return offerGroup ? offerGroup.offers : [];
+}
+
+function getOffersById(id, offers) {
+  return offers.find((offer) => offer.id === id);
 }
 
 function formatEventDuration(startDate, endDate) {
@@ -70,12 +90,37 @@ const sortByTime = (pointA, pointB) => dayjs(pointB.dateTo).diff(pointB.dateFrom
 
 const sortByPrice = (pointA, pointB) => pointB.basePrice - pointA.basePrice;
 
+const getFullDate = (date) => dayjs(date).format('DD/MM/YY HH:mm');
+
+
+const getRandomDates = () => {
+  const dateFrom = new Date();
+  dateFrom.setDate(dateFrom.getDate() + Math.floor(Math.random() * 10 * (Math.random() < 0.5 ? -1 : 1)));
+
+  dateFrom.setHours(Math.floor(Math.random() * 24));
+  dateFrom.setMinutes(Math.floor(Math.random() * 60));
+  dateFrom.setSeconds(0);
+
+  const dateTo = new Date(dateFrom);
+  const daysDifference = Math.floor(Math.random() * 10);
+
+  dateTo.setDate(dateFrom.getDate() + daysDifference);
+
+  dateTo.setHours(Math.floor(Math.random() * 24));
+  dateTo.setMinutes(Math.floor(Math.random() * 60));
+
+  return [dateFrom, dateTo];
+};
+
 export {
   getRandomArrayElement,
+  getRandomElementsOfArray,
   formatEventDate,
   formatEventTime,
   getDestinationById,
   getOffersByType,
+  getOffersById,
+  getDestinationByCity,
   formatEventDuration,
   formatFormEventDate,
   isEscapeKey,
@@ -85,5 +130,7 @@ export {
   updateItem,
   sortByDay,
   sortByTime,
-  sortByPrice
+  sortByPrice,
+  getRandomDates,
+  getFullDate
 };

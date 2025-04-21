@@ -1,14 +1,14 @@
 import BoardPresenter from './presenter/board-presenter';
-import EventsModel from './model/events-model.js';
+import PointsListModel from './model/points-list-model.js';
 
-const eventsModel = new EventsModel();
+const pointsListModel = new PointsListModel();
 const eventsContainer = document.querySelector('.trip-events');
 const filterContainer = document.querySelector('.trip-controls__filters');
 
 const currentPresenter = new BoardPresenter({
   eventsContainer,
   filterContainer,
-  eventsModel
+  pointsListModel
 });
 
 currentPresenter.init();
