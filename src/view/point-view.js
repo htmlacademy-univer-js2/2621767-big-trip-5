@@ -34,7 +34,6 @@ function createPointRouteTemplate(event, destinations, allOffers) {
   };
 
   const startDate = formatEventDate(dateFrom);
-  const endDate = formatEventDate(dateTo);
   const startTime = formatEventTime(dateFrom);
   const endTime = formatEventTime(dateTo);
   const duration = formatEventDuration(dateFrom, dateTo);
