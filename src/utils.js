@@ -54,20 +54,42 @@ function getOffersById(id, offers) {
 }
 
 function formatEventDuration(startDate, endDate) {
-  const eventDuration = dayjs.duration(endDate - startDate);
-  const durationInDays = eventDuration.format('DD');
-  const durationInHours = eventDuration.format('HH');
-  const durationInMinutes = eventDuration.format('mm');
-
-  if (durationInHours === '00') {
-    return `${durationInMinutes}M`;
+  if (!startDate || !endDate) {
+    return '';
   }
 
-  if (durationInDays === '00') {
-    return `${durationInHours}H ${durationInMinutes}M`;
+  const diffInMilliseconds = dayjs(endDate).diff(dayjs(startDate));
+  const eventDuration = dayjs.duration(diffInMilliseconds);
+
+  const years = eventDuration.years();
+  const months = eventDuration.months();
+  const days = eventDuration.days();
+  const hours = eventDuration.hours();
+  const minutes = eventDuration.minutes();
+
+  let result = '';
+
+  if (years > 0) {
+    result += `${years}Y `;
   }
 
-  return `${durationInDays}D ${durationInHours}H ${durationInMinutes}M`;
+  if (months > 0 || years > 0) {
+    result += `${months}M `;
+  }
+
+  if (days > 0 || months > 0 || years > 0) {
+    result += `${days}D `;
+  }
+
+  if (hours > 0 || days > 0 || months > 0 || years > 0) {
+    result += `${hours}H `;
+  }
+
+  result += `${minutes}M`;
+
+  result = result.replace(/^0[YMDH]\s+/g, '').trim();
+
+  return result;
 }
 
 function isEscapeKey(evt) {

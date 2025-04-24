@@ -1,5 +1,5 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {getFullDate, getOffersByType} from '../utils.js';
+import {formatEventDate, getFullDate, getOffersByType} from '../utils.js';
 import { EVENT_TYPES } from '../const.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
@@ -36,8 +36,9 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
     description: destination.description,
     pictures: destination.pictures,
   };
-  const fullStartDate = getFullDate(dateFrom);
-  const fullEndDate = getFullDate(dateTo);
+
+  const fullStartDate = formatEventDate(dateFrom);
+  const fullEndDate = formatEventDate(dateTo);
   const availableOffers = getOffersByType(type, allOffers);
 
   const pointTypeIsChecked = (eventType) => eventType === type ? 'checked' : '';
@@ -67,11 +68,15 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
                   <label class="event__label  event__type-output" for="event-destination-${id}">
                     ${type}
                   </label>
-                  <input class="event__input  event__input--destination" id="event-destination-${id}" type="text" name="event-destination" value="${pointDestination.city}" list="destination-list-1">
-                  <datalist id="destination-list-${id}">
-                    ${destinations.map((dest) => `<option value="${dest.city}"></option>`).join('')}
-                  </datalist>
+                  <select class="event__input  event__input--destination" id="event-destination-${id}" name="event-destination">
+                    ${destinations.map((dest) =>
+    `<option value="${dest.city}" ${dest.city === pointDestination.city ? 'selected' : ''}>
+                        ${dest.city}
+                      </option>`
+  ).join('')}
+                  </select>
                 </div>
+
 
                 <div class="event__field-group  event__field-group--time">
                   <label class="visually-hidden" for="event-start-time-1">From</label>
@@ -206,10 +211,10 @@ export default class FormEditing extends AbstractStatefulView {
     this._setState({
       event: {
         ...this._state.event,
-        endDatetime: date,
+        dateTo: date,
       }
     });
-    this.#datepickerStart.set('maxDate', this._state.event.endDatetime);
+    this.#datepickerStart.set('maxDate', this._state.event.dateTo);
   };
 
   #setDatepickers = () => {

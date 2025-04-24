@@ -28,9 +28,7 @@ export default class BoardPresenter {
     this.#pointsListModel = pointsListModel;
   }
 
-  // board-presenter.js
   init() {
-    // Add proper null checks
     this.#boardEvents = Array.isArray(this.#pointsListModel?.points)
       ? [...this.#pointsListModel.points]
       : [];

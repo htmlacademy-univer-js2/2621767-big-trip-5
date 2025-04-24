@@ -71,7 +71,7 @@ export default class EventPresenter {
 
     if (this.#mode === MODE.EDITING) {
       replace(this.#eventEditComponent, prevEventEditComponent);
-      this.#mode = MODE.DEFAULT; // Reset mode after replacement
+      this.#mode = MODE.DEFAULT;
     }
 
     remove(prevEventComponent);

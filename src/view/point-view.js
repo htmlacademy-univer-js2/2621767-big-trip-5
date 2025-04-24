@@ -15,7 +15,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
   const eventTypeOffers = allOffers.find((offerGroup) => offerGroup.type === eventType)?.offers || [];
 
   const selectedOffers = eventTypeOffers.filter((offer) =>
-    event.offers.some((id) => id === offer.id) // Нестрогое сравнение для разных типов
+    event.offers.some((id) => id === offer.id)
   );
 
   function validateEventType(objecttype) {
@@ -34,6 +34,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
   };
 
   const startDate = formatEventDate(dateFrom);
+  const endDate = formatEventDate(dateTo);
   const startTime = formatEventTime(dateFrom);
   const endTime = formatEventTime(dateTo);
   const duration = formatEventDuration(dateFrom, dateTo);
@@ -102,7 +103,6 @@ export default class Point extends AbstractView {
     this.#handleEditClick = onEditClick;
     this.#handleFavoriteClick = onFavoriteClick;
 
-    // Add event listeners safely
     this.element.querySelector('.event__rollup-btn')?.addEventListener('click', this.#editClickHandler);
     this.element.querySelector('.event__favorite-btn')?.addEventListener('click', this.#favoriteClickHandler);
   }
