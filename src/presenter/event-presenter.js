@@ -57,7 +57,8 @@ export default class EventPresenter {
       destinations: this.#destinations,
       offers: this.#offers,
       onRollButtonClick: this.#replaceFormToEvent,
-      onSubmitButtonClick: this.#handleFormSubmit
+      onSubmitButtonClick: this.#handleFormSubmit,
+      onDeleteClick: this.#handleDeleteClick
     });
 
     if (!prevEventComponent || !prevEventEditComponent) {
@@ -94,12 +95,22 @@ export default class EventPresenter {
     }
   }
 
+  #handleDeleteClick = (point) => {
+    this.#handleDataChange({
+      type: 'DELETE',
+      point: point
+    });
+    this.#replaceFormToEvent();
+  };
+
   #handleFormSubmit = (updatedEvent) => {
-    const normalizedEvent = {
-      ...updatedEvent,
-      offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
-    };
-    this.#handleDataChange(normalizedEvent);
+    this.#handleDataChange({
+      type: 'UPDATE',
+      point: {
+        ...updatedEvent,
+        offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
+      }
+    });
     this.#replaceFormToEvent();
   };
 
@@ -121,8 +132,11 @@ export default class EventPresenter {
 
   #handleFavoriteClick = () => {
     this.#handleDataChange({
-      ...this.#event,
-      isFavorite: !this.#event.isFavorite
+      type: 'UPDATE',
+      point: {
+        ...this.#event,
+        isFavorite: !this.#event.isFavorite
+      }
     });
   };
 }

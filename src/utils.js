@@ -117,19 +117,17 @@ const getFullDate = (date) => dayjs(date).format('DD/MM/YY HH:mm');
 
 const getRandomDates = () => {
   const dateFrom = new Date();
-  dateFrom.setDate(dateFrom.getDate() + Math.floor(Math.random() * 10 * (Math.random() < 0.5 ? -1 : 1)));
-
+  dateFrom.setDate(dateFrom.getDate() + Math.floor(Math.random() * 11) - 5);
   dateFrom.setHours(Math.floor(Math.random() * 24));
-  dateFrom.setMinutes(Math.floor(Math.random() * 60));
+  dateFrom.setMinutes(Math.floor(Math.random() * 12) * 5);
   dateFrom.setSeconds(0);
+  dateFrom.setMilliseconds(0);
 
   const dateTo = new Date(dateFrom);
-  const daysDifference = Math.floor(Math.random() * 10);
-
-  dateTo.setDate(dateFrom.getDate() + daysDifference);
-
-  dateTo.setHours(Math.floor(Math.random() * 24));
-  dateTo.setMinutes(Math.floor(Math.random() * 60));
+  const durationInMs = Math.floor(
+    Math.random() * (5 * 24 * 60 * 60 * 1000 - 30 * 60 * 1000) + 30 * 60 * 1000
+  );
+  dateTo.setTime(dateFrom.getTime() + durationInMs);
 
   return [dateFrom, dateTo];
 };

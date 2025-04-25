@@ -1,5 +1,5 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {formatEventDate, getOffersByType} from '../utils.js';
+import {formatEventDate, getFullDate, getOffersByType} from '../utils.js';
 import { EVENT_TYPES } from '../const.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
@@ -37,8 +37,8 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
     pictures: destination.pictures,
   };
 
-  const fullStartDate = formatEventDate(dateFrom);
-  const fullEndDate = formatEventDate(dateTo);
+  const fullStartDate = getFullDate(dateFrom);
+  const fullEndDate = getFullDate(dateTo);
   const availableOffers = getOffersByType(type, allOffers);
 
   const pointTypeIsChecked = (eventType) => eventType === type ? 'checked' : '';
@@ -130,15 +130,17 @@ export default class FormEditing extends AbstractStatefulView {
   #onRollButtonClick = null;
   #onSubmitButtonClick = null;
   #datepickerStart = null;
+  #handleDeleteClick = null;
   #datepickerEnd = null;
 
-  constructor({event, destinations, offers, onRollButtonClick, onSubmitButtonClick}) {
+  constructor({event, destinations, offers, onRollButtonClick, onSubmitButtonClick, onDeleteClick}) {
     super();
     this._setState({event});
     this.#destinations = destinations || [];
     this.#offers = offers || [];
     this.#onRollButtonClick = onRollButtonClick;
     this.#handleFormSubmit = onSubmitButtonClick;
+    this.#handleDeleteClick = onDeleteClick;
     this._restoreHandlers();
   }
 
@@ -205,6 +207,11 @@ export default class FormEditing extends AbstractStatefulView {
   #onRollButtonElementClick = (event) => {
     event.preventDefault();
     this.#onRollButtonClick();
+  };
+
+  #onDeleteButtonClick = (event) => {
+    event.preventDefault();
+    this.#handleDeleteClick(this._state.event); // Передаем текущее состояние точки
   };
 
   #onDateEndCloseButton = ([date]) => {
@@ -305,6 +312,7 @@ export default class FormEditing extends AbstractStatefulView {
     this.element.querySelector('.event__input--destination').addEventListener('change', this.#onDestinationChange);
     this.element.querySelectorAll('.event__offer-checkbox').forEach((element) =>
       element.addEventListener('change', this.#onOffersChange));
+    this.element.querySelector('.event__reset-btn').addEventListener('click', this.#onDeleteButtonClick);
     this.#formValidation();
     this.#setDatepickers();
   };
