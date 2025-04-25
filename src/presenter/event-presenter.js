@@ -2,7 +2,7 @@ import { render, replace, remove } from '../framework/render';
 import FormEditing from '../view/form-edit-view';
 import Point from '../view/point-view';
 import { isEscapeKey } from '../utils';
-import { MODE } from '../const';
+import { MODE } from '../const'; //пробуем так
 
 export default class EventPresenter {
   #eventListContainer = null;
