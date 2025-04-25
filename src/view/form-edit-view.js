@@ -1,5 +1,5 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {getFullDate, getOffersByType} from '../utils.js';
+import { getFullDate, getOffersByType } from '../utils.js';
 import { EVENT_TYPES } from '../const.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
@@ -36,6 +36,7 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
     description: destination.description,
     pictures: destination.pictures,
   };
+
   const fullStartDate = getFullDate(dateFrom);
   const fullEndDate = getFullDate(dateTo);
   const availableOffers = getOffersByType(type, allOffers);
@@ -67,11 +68,15 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = []) {
                   <label class="event__label  event__type-output" for="event-destination-${id}">
                     ${type}
                   </label>
-                  <input class="event__input  event__input--destination" id="event-destination-${id}" type="text" name="event-destination" value="${pointDestination.city}" list="destination-list-1">
-                  <datalist id="destination-list-${id}">
-                    ${destinations.map((dest) => `<option value="${dest.city}"></option>`).join('')}
-                  </datalist>
+                  <select class="event__input  event__input--destination" id="event-destination-${id}" name="event-destination">
+                    ${destinations.map((dest) =>
+    `<option value="${dest.city}" ${dest.city === pointDestination.city ? 'selected' : ''}>
+                        ${dest.city}
+                      </option>`
+  ).join('')}
+                  </select>
                 </div>
+
 
                 <div class="event__field-group  event__field-group--time">
                   <label class="visually-hidden" for="event-start-time-1">From</label>
@@ -125,15 +130,17 @@ export default class FormEditing extends AbstractStatefulView {
   #onRollButtonClick = null;
   #onSubmitButtonClick = null;
   #datepickerStart = null;
+  #handleDeleteClick = null;
   #datepickerEnd = null;
 
-  constructor({event, destinations, offers, onRollButtonClick, onSubmitButtonClick}) {
+  constructor({event, destinations, offers, onRollButtonClick, onSubmitButtonClick, onDeleteClick}) {
     super();
     this._setState({event});
     this.#destinations = destinations || [];
     this.#offers = offers || [];
     this.#onRollButtonClick = onRollButtonClick;
     this.#handleFormSubmit = onSubmitButtonClick;
+    this.#handleDeleteClick = onDeleteClick;
     this._restoreHandlers();
   }
 
@@ -202,14 +209,19 @@ export default class FormEditing extends AbstractStatefulView {
     this.#onRollButtonClick();
   };
 
+  #onDeleteButtonClick = (event) => {
+    event.preventDefault();
+    this.#handleDeleteClick(this._state.event); // Передаем текущее состояние точки
+  };
+
   #onDateEndCloseButton = ([date]) => {
     this._setState({
       event: {
         ...this._state.event,
-        endDatetime: date,
+        dateTo: date,
       }
     });
-    this.#datepickerStart.set('maxDate', this._state.event.endDatetime);
+    this.#datepickerStart.set('maxDate', this._state.event.dateTo);
   };
 
   #setDatepickers = () => {
@@ -300,6 +312,7 @@ export default class FormEditing extends AbstractStatefulView {
     this.element.querySelector('.event__input--destination').addEventListener('change', this.#onDestinationChange);
     this.element.querySelectorAll('.event__offer-checkbox').forEach((element) =>
       element.addEventListener('change', this.#onOffersChange));
+    this.element.querySelector('.event__reset-btn').addEventListener('click', this.#onDeleteButtonClick);
     this.#formValidation();
     this.#setDatepickers();
   };

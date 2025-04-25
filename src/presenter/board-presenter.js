@@ -28,9 +28,7 @@ export default class BoardPresenter {
     this.#pointsListModel = pointsListModel;
   }
 
-  // board-presenter.js
   init() {
-    // Add proper null checks
     this.#boardEvents = Array.isArray(this.#pointsListModel?.points)
       ? [...this.#pointsListModel.points]
       : [];
@@ -65,9 +63,22 @@ export default class BoardPresenter {
     this.#eventPresenters.forEach((presenter) => presenter.resetView());
   };
 
-  #onFavoriteBtnClick = (updatedEvent) => {
-    this.#boardEvents = updateItem(this.#boardEvents, updatedEvent);
-    this.#eventPresenters.get(updatedEvent.id).init(updatedEvent);
+  #onFavoriteBtnClick = (action) => {
+    switch (action.type) {
+      case 'UPDATE':
+        this.#boardEvents = updateItem(this.#boardEvents, action.point);
+        this.#eventPresenters.get(action.point.id)?.init(action.point);
+        break;
+      case 'DELETE':
+        this.#boardEvents = this.#boardEvents.filter((point) => point.id !== action.point.id);
+        this.#eventPresenters.get(action.point.id)?.destroy();
+        this.#eventPresenters.delete(action.point.id);
+        if (this.#boardEvents.length === 0) {
+          this.#clearEventsList();
+          this.#renderEventsList();
+        }
+        break;
+    }
   };
 
   #clearEventsList() {

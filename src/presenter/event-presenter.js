@@ -2,7 +2,7 @@ import { render, replace, remove } from '../framework/render';
 import FormEditing from '../view/form-edit-view';
 import Point from '../view/point-view';
 import { isEscapeKey } from '../utils';
-import { MODE } from '../const';
+import { MODE } from '../const'; //пробуем так
 
 export default class EventPresenter {
   #eventListContainer = null;
@@ -57,7 +57,8 @@ export default class EventPresenter {
       destinations: this.#destinations,
       offers: this.#offers,
       onRollButtonClick: this.#replaceFormToEvent,
-      onSubmitButtonClick: this.#handleFormSubmit
+      onSubmitButtonClick: this.#handleFormSubmit,
+      onDeleteClick: this.#handleDeleteClick
     });
 
     if (!prevEventComponent || !prevEventEditComponent) {
@@ -71,7 +72,7 @@ export default class EventPresenter {
 
     if (this.#mode === MODE.EDITING) {
       replace(this.#eventEditComponent, prevEventEditComponent);
-      this.#mode = MODE.DEFAULT; // Reset mode after replacement
+      this.#mode = MODE.DEFAULT;
     }
 
     remove(prevEventComponent);
@@ -94,12 +95,22 @@ export default class EventPresenter {
     }
   }
 
+  #handleDeleteClick = (point) => {
+    this.#handleDataChange({
+      type: 'DELETE',
+      point: point
+    });
+    this.#replaceFormToEvent();
+  };
+
   #handleFormSubmit = (updatedEvent) => {
-    const normalizedEvent = {
-      ...updatedEvent,
-      offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
-    };
-    this.#handleDataChange(normalizedEvent);
+    this.#handleDataChange({
+      type: 'UPDATE',
+      point: {
+        ...updatedEvent,
+        offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
+      }
+    });
     this.#replaceFormToEvent();
   };
 
@@ -121,8 +132,11 @@ export default class EventPresenter {
 
   #handleFavoriteClick = () => {
     this.#handleDataChange({
-      ...this.#event,
-      isFavorite: !this.#event.isFavorite
+      type: 'UPDATE',
+      point: {
+        ...this.#event,
+        isFavorite: !this.#event.isFavorite
+      }
     });
   };
 }

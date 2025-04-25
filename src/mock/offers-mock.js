@@ -16,12 +16,12 @@ const OFFERS = [
       },
       {
         'id': 3,
-        'title': 'Select Luxury Car',
+        'title': 'Luxury Car',
         'price': 60,
       },
       {
         'id': 4,
-        'title': 'Request Child Seat',
+        'title': 'Child Seat',
         'price': 15,
       },
       {
@@ -41,12 +41,12 @@ const OFFERS = [
       },
       {
         'id': 2,
-        'title': 'Extra Legroom Seat',
+        'title': 'Extra Legroom',
         'price': 70,
       },
       {
         'id': 3,
-        'title': 'Fast Track Security',
+        'title': 'Fast Security',
         'price': 30,
       },
       {
@@ -56,7 +56,7 @@ const OFFERS = [
       },
       {
         'id': 5,
-        'title': 'Additional Baggage',
+        'title': 'Add Baggage',
         'price': 80,
       }
     ]
@@ -77,7 +77,7 @@ const OFFERS = [
       {
         'id': 3,
         'title': 'Room Upgrade',
-        'price': 100,
+        'price': 10,
       },
       {
         'id': 4,
@@ -186,7 +186,7 @@ const OFFERS = [
     'offers': [
       {
         'id': 1,
-        'title': 'Choose coupe ticket',
+        'title': 'Coupe ticket',
         'price': 45,
       },
       {
@@ -222,7 +222,7 @@ const OFFERS = [
       {
         'id': 2,
         'title': 'Breakdown',
-        'price': 125,
+        'price': 25,
       },
       {
         'id': 3,
@@ -241,12 +241,12 @@ const OFFERS = [
       },
       {
         'id': 2,
-        'title': 'Place near window',
+        'title': 'Near window',
         'price': 25,
       },
       {
         'id': 3,
-        'title': 'Choose single seat',
+        'title': 'Single seat',
         'price': 80,
       }
     ]
