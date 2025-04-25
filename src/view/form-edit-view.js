@@ -1,5 +1,5 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {formatEventDate, getFullDate, getOffersByType} from '../utils.js';
+import { getFullDate, getOffersByType } from '../utils.js';
 import { EVENT_TYPES } from '../const.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
