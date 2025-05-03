@@ -1,20 +1,27 @@
-import { isFutureEvent, isPastEvent, isPresentEvent } from './utils.js';
+import { isFutureEvent, isPastEvent, isPresentEvent } from './date-utils.js';
 
-const filterType = {
-  EVERYTHING:'everything',
-  FUTURE:'future',
-  PRESENT:'present',
-  PAST:'past',
+const FILTER_TYPE = {
+  EVERYTHING:'EVERYTHING',
+  FUTURE:'FUTURE',
+  PRESENT: 'PRESENT',
+  PAST:'PAST',
 };
 
-const filter = {
-  [filterType.EVERYTHING]: (points) => points,
-  [filterType.FUTURE]: (points) => points.filter((point) => isFutureEvent(point.dateFrom)),
-  [filterType.PRESENT]: (points) => points.filter((point) => isPresentEvent(point.dateFrom, point.dateTo)),
-  [filterType.PAST]: (points) => points.filter((point) => isPastEvent(point.dateTo))
+const LIST_MESSAGES = {
+  [FILTER_TYPE.EVERYTHING]: 'Click New Event to create your first point',
+  [FILTER_TYPE.FUTURE]: 'There are no future events now',
+  [FILTER_TYPE.PRESENT]: 'There are no present events now',
+  [FILTER_TYPE.PAST]: 'There are no past events now'
 };
 
-const SORT_TYPES = {
+const FILTER = {
+  [FILTER_TYPE.EVERYTHING]: (points) => points,
+  [FILTER_TYPE.FUTURE]: (points) => points.filter((point) => isFutureEvent(point.dateFrom)),
+  [FILTER_TYPE.PRESENT]: (points) => points.filter((point) => isPresentEvent(point.dateFrom, point.dateTo)),
+  [FILTER_TYPE.PAST]: (points) => points.filter((point) => isPastEvent(point.dateTo))
+};
+
+const SORT_TYPE = {
   DAY: 'day',
   TIME: 'time',
   PRICE: 'price',
@@ -25,7 +32,7 @@ const MODE = {
   EDITING: 'EDITING',
 };
 
-const EVENT_TYPES = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
+const EVENT_TYPE = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
 
 const CITIES = ['Berlin', 'Stuttgart', 'Minsk', 'Köln', 'London', 'Lissabon', 'Irkutsk', 'Sydney', 'Paris', 'Moscow'];
 
@@ -43,4 +50,31 @@ const DESCRIPTIONS = [
   'In rutrum ac purus sit amet tempus.',
 ];
 
-export {filter, SORT_TYPES, MODE, EVENT_TYPES, CITIES, DESCRIPTIONS};
+const ACTIONS = {
+  UPDATE_POINT: 'UPDATE_POINT',
+  DELETE_POINT: 'DELETE_POINT',
+  ADD_POINT: 'ADD_POINT',
+};
+
+const FORM_TYPE = {
+  CREATE: 'CREATE',
+  EDIT: 'EDIT',
+};
+
+const POINT = {
+  type: 'flight',
+  dateFrom: null,
+  destination: null,
+  dateTo: null,
+  basePrice: 10,
+  offers: [],
+  isFavorite: false,
+};
+
+const UPDATE_TYPE = {
+  PATCH: 'PATCH',
+  MINOR: 'MINOR',
+  MAJOR: 'MAJOR',
+};
+
+export {FILTER_TYPE, LIST_MESSAGES, FILTER, SORT_TYPE, MODE, EVENT_TYPE, CITIES, DESCRIPTIONS, ACTIONS, FORM_TYPE, POINT, UPDATE_TYPE};

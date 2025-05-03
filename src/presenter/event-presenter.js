@@ -2,7 +2,7 @@ import { render, replace, remove } from '../framework/render';
 import FormEditing from '../view/form-edit-view';
 import Point from '../view/point-view';
 import { isEscapeKey } from '../utils';
-import { MODE } from '../const'; //пробуем так
+import { MODE, ACTIONS, UPDATE_TYPE } from '../const';
 
 export default class EventPresenter {
   #eventListContainer = null;
@@ -95,23 +95,24 @@ export default class EventPresenter {
     }
   }
 
-  #handleDeleteClick = (point) => {
-    this.#handleDataChange({
-      type: 'DELETE',
-      point: point
-    });
+  #handleDeleteClick = (pointToDelete) => {
+    this.#handleDataChange(ACTIONS.DELETE_POINT, UPDATE_TYPE.MINOR, pointToDelete);
     this.#replaceFormToEvent();
   };
 
   #handleFormSubmit = (updatedEvent) => {
-    this.#handleDataChange({
-      type: 'UPDATE',
-      point: {
-        ...updatedEvent,
-        offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
-      }
+    this.#handleDataChange(ACTIONS.UPDATE_POINT, UPDATE_TYPE.MINOR, {
+      ...updatedEvent,
+      offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
     });
     this.#replaceFormToEvent();
+  };
+
+  #handleFavoriteClick = () => {
+    this.#handleDataChange(ACTIONS.UPDATE_POINT, UPDATE_TYPE.PATCH, {
+      ...this.#event,
+      isFavorite: !this.#event.isFavorite
+    });
   };
 
   #replaceEventToForm = () => {
@@ -128,15 +129,5 @@ export default class EventPresenter {
     replace(this.#eventComponent, this.#eventEditComponent);
     document.removeEventListener('keydown', this.#onEscKeydown);
     this.#mode = MODE.DEFAULT;
-  };
-
-  #handleFavoriteClick = () => {
-    this.#handleDataChange({
-      type: 'UPDATE',
-      point: {
-        ...this.#event,
-        isFavorite: !this.#event.isFavorite
-      }
-    });
   };
 }

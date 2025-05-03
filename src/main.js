@@ -1,14 +1,30 @@
 import BoardPresenter from './presenter/board-presenter';
-import PointsListModel from './model/points-list-model.js';
+import PointsListModel from './model/points-list-model';
+import FilterPresenter from './presenter/filter-presenter';
+import FilterModel from './model/filter-model.js';
+import ButtonPointPresenter from './presenter/button-point-presenter.js';
 
 const pointsListModel = new PointsListModel();
-const eventsContainer = document.querySelector('.trip-events');
-const filterContainer = document.querySelector('.trip-controls__filters');
 
-const currentPresenter = new BoardPresenter({
-  eventsContainer,
-  filterContainer,
+const buttonPointPresenter = new ButtonPointPresenter({
+  container: document.querySelector('.trip-main')
+});
+
+const filterModel = new FilterModel();
+
+const boardPresenter = new BoardPresenter({
+  eventsContainer: document.querySelector('.trip-events'),
+  filterModel,
+  pointsListModel,
+  buttonPointPresenter
+});
+
+const filterPresenter = new FilterPresenter({
+  filterContainer: document.querySelector('.trip-controls__filters'),
+  filterModel,
   pointsListModel
 });
 
-currentPresenter.init();
+filterPresenter.init();
+boardPresenter.init();
+buttonPointPresenter.init({onNewPointButtonClick: boardPresenter.onNewPointButtonClick});
