@@ -1,4 +1,4 @@
-import { EVENT_TYPES } from '../const.js';
+import { EVENT_TYPE } from '../const.js';
 import { getRandomArrayElement, getRandomDates } from '../utils.js';
 import { getRandomOffersIDs } from './offers-mock';
 import { getRandomDestination } from './destination-mock';
@@ -9,7 +9,7 @@ const POINTS_MAX_COUNT = 9;
 
 const getRandomEvent = () => {
   const twoDates = getRandomDates();
-  const eventType = EVENT_TYPES[getRandomArrayElement(0, EVENT_TYPES.length - 1)];
+  const eventType = EVENT_TYPE[getRandomArrayElement(0, EVENT_TYPE.length - 1)];
   const destination = getRandomDestination();
 
   const destinationId = destination?.id || crypto.randomUUID();

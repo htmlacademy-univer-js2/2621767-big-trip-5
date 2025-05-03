@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
+import { FILTER_TYPE } from './const.js';
 
 dayjs.extend(duration);
 
@@ -114,6 +115,14 @@ const sortByPrice = (pointA, pointB) => pointB.basePrice - pointA.basePrice;
 
 const getFullDate = (date) => dayjs(date).format('DD/MM/YY HH:mm');
 
+const isSameDate = (date1, date2) => dayjs(date1).isSame(date2, 'd');
+
+const filter = {
+  [FILTER_TYPE.EVERYTHING]: (points) => points,
+  [FILTER_TYPE.FUTURE]: (points) => points.filter((point) => isFutureEvent(point.dateFrom)),
+  [FILTER_TYPE.PRESENT]: (points) => points.filter((point) => isPresentEvent(point.dateFrom, point.dateTo)),
+  [FILTER_TYPE.PAST]: (points) => points.filter((point) => isPastEvent(point.dateTo))
+};
 
 const getRandomDates = () => {
   const dateFrom = new Date();
@@ -151,6 +160,8 @@ export {
   sortByDay,
   sortByTime,
   sortByPrice,
+  isSameDate,
+  filter,
   getRandomDates,
   getFullDate
 };
