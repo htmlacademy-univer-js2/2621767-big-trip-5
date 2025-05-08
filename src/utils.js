@@ -45,10 +45,10 @@ function getDestinationByCity(city, destinations) {
   return destinations.find((destination) => destination.city === city);
 }
 
-function getOffersByType(type, offers) {
-  const offerGroup = offers.find((offer) => offer.type === type);
-  return offerGroup ? offerGroup.offers : [];
+function getOffersByType(type, offersByType) {
+  return offersByType[type] || [];
 }
+
 
 function getOffersById(id, offers) {
   return offers.find((offer) => offer.id === id);
@@ -111,7 +111,7 @@ const sortByDay = (pointA, pointB) => dayjs(pointA.dateFrom).diff(dayjs(pointB.d
 
 const sortByTime = (pointA, pointB) => dayjs(pointB.dateTo).diff(pointB.dateFrom) - dayjs(pointA.dateTo).diff(pointA.dateFrom);
 
-const sortByPrice = (pointA, pointB) => pointB.basePrice - pointA.basePrice;
+const sortByPrice = (pointA, pointB) => pointB.price - pointA.price;
 
 const getFullDate = (date) => dayjs(date).format('DD/MM/YY HH:mm');
 

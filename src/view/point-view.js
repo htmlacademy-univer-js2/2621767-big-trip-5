@@ -3,16 +3,16 @@ import { formatEventTime, formatEventDate, formatEventDuration } from '../utils.
 
 function createPointRouteTemplate(event, destinations, allOffers) {
   const {
-    destination = '',
+    destination = {},
     dateFrom = new Date(),
     dateTo = new Date(),
-    basePrice = 0,
+    price = 0,
     isFavorite = false,
     type = 'flight'
   } = event;
 
   const eventType = validateEventType(type);
-  const eventTypeOffers = allOffers.find((offerGroup) => offerGroup.type === eventType)?.offers || [];
+  const eventTypeOffers = allOffers[eventType] || [];
 
   const selectedOffers = eventTypeOffers.filter((offer) =>
     event.offers.some((id) => id === offer.id)
@@ -26,13 +26,10 @@ function createPointRouteTemplate(event, destinations, allOffers) {
     return validTypes.includes(normalizedType) ? normalizedType : defaultType;
   }
 
-  const pointDestination = destinations.find((dest) => dest.id === destination) || {
-    id: destination.id,
-    city: destination.city,
-    description: destination.description,
-    pictures: destination.pictures,
-  };
+  // Найдем пункт назначения по id
+  const pointDestination = destinations.find((dest) => dest.id === destination);
 
+  // Форматирование времени и длительности
   const startDate = formatEventDate(dateFrom);
   const startTime = formatEventTime(dateFrom);
   const endTime = formatEventTime(dateTo);
@@ -47,7 +44,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
                src="img/icons/${eventType}.png"
                alt="Event type icon">
         </div>
-        <h3 class="event__title">${eventType} ${pointDestination.city}</h3>
+        <h3 class="event__title">${eventType} ${pointDestination.name || 'Unknown city'}</h3> <!-- Используем name для вывода города -->
         <div class="event__schedule">
           <p class="event__time">
             <time class="event__start-time" datetime="${dateFrom.toISOString()}">${startTime}</time>
@@ -57,7 +54,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
           <p class="event__duration">${duration}</p>
         </div>
         <p class="event__price">
-          &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
+          &euro;&nbsp;<span class="event__price-value">${price}</span>
         </p>
         <section class="event__section event__section--offers">
           <h4 class="visually-hidden">Offers:</h4>
@@ -83,6 +80,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
       </div>
     </li>`;
 }
+
 
 export default class Point extends AbstractView {
   #event = null;
