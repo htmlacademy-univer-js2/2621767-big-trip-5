@@ -1,6 +1,6 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view';
-import { getFullDate, getOffersByType } from '../utils';
-import { EVENT_TYPE, POINT, FORM_TYPE } from '../const';
+import {getFullDate, getOffersByType} from '../utils';
+import {EVENT_TYPE, FORM_TYPE, POINT} from '../const';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 
@@ -28,14 +28,14 @@ function createOfferTemplate(offer, pointOffers) {
 }
 
 function makeFormEditingTemplate(state, destinations = [], allOffers = [], formType = []) {
-  const {id, type, destination, dateFrom, dateTo, basePrice, offers} = state.event;
+  const {id, type, destination, dateFrom, dateTo, price, offers} = state.event;
 
   let pointDestination = destinations.find((dest) => dest?.id === destination);
 
   if (!pointDestination) {
     pointDestination = {
       id: null,
-      city: '',
+      name: '',
       description: '',
       pictures: [],
     };
@@ -72,10 +72,10 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                     ${type}
                   </label>
                   <select class="event__input  event__input--destination" id="event-destination-${id || 'new'}" name="event-destination">
-                    <option value="" ${!pointDestination?.city ? 'selected' : ''} disabled>Выберите пункт назначения</option>
+                    <option value="" ${!pointDestination?.name ? 'selected' : ''} disabled>Выберите пункт назначения</option>
                     ${destinations.map((dest) =>
-    `<option value="${dest.city}" ${pointDestination?.city === dest.city ? 'selected' : ''}>
-                        ${dest.city}
+    `<option value="${dest.name}" ${pointDestination?.name === dest.name ? 'selected' : ''}>
+                        ${dest.name}
                       </option>`
   ).join('')}
                   </select>
@@ -94,7 +94,7 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                     <span class="visually-hidden">Price</span>
                     &euro;
                   </label>
-                  <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${basePrice}">
+                  <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${price}">
                 </div>
 
                 <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
@@ -157,10 +157,41 @@ export default class FormEditing extends AbstractStatefulView {
 
   reset = (event) => this.updateElement({event});
 
-  #onSubmitButtonElementClick = (event) => {
-    event.preventDefault();
-    this.#handleFormSubmit(this.#parseStateToPoint());
+  #onSubmitButtonElementClick = async (evt) => {
+    evt.preventDefault();
+
+    if (this._state.isDisabled) {
+      return;
+    }
+
+    try {
+      const pointToSave = this.#parseStateToPoint();
+
+      if (!this.#validatePointData(pointToSave)) {
+        return;
+      }
+
+      this.updateElement({
+        isDisabled: true,
+        isSaving: true,
+      });
+
+      await this.#handleFormSubmit(pointToSave);
+
+    } catch (error) {
+      this.updateElement({
+        isDisabled: false,
+        isSaving: false,
+      });
+    }
   };
+
+  #validatePointData = (point) => point.destination &&
+      point.destination !== 'unknown' &&
+      point.price > 0 &&
+      point.dateFrom &&
+      point.dateTo &&
+      point.dateFrom < point.dateTo;
 
   #changePointType = (event) => {
     this.updateElement({
@@ -176,7 +207,7 @@ export default class FormEditing extends AbstractStatefulView {
     this._setState({
       event: {
         ...this._state.event,
-        basePrice: Number(event.target.value),
+        price: Number(event.target.value),
       }
     });
   };
@@ -199,7 +230,7 @@ export default class FormEditing extends AbstractStatefulView {
 
   #onDestinationChange = (event) => {
     const cityName = event.target.value;
-    const selectedDestination = this.#destinations.find((dest) => dest.city === cityName);
+    const selectedDestination = this.#destinations.find((dest) => dest.name === cityName);
 
     this.updateElement({
       event: {
@@ -210,6 +241,7 @@ export default class FormEditing extends AbstractStatefulView {
       this.#formValidation();
     });
   };
+
 
   #onRollButtonElementClick = (event) => {
     event.preventDefault();
@@ -298,17 +330,11 @@ export default class FormEditing extends AbstractStatefulView {
     const point = {
       ...this._state.event,
       destination: this._state.event.destination === undefined ? 'unknown' : this._state.event.destination,
-      basePrice: Number(this._state.event.basePrice) || 0,
-      offers: Array.isArray(this._state.event.offers)
-        ? this._state.event.offers
-        : [],
+      price: Number(this._state.event.price) || 0,
+      offers: Array.isArray(this._state.event.offers) ? this._state.event.offers : [],
       dateFrom: this._state.event.dateFrom,
       dateTo: this._state.event.dateTo
     };
-
-    if (!point.offers.every((offer) => typeof offer === 'string' || typeof offer === 'number')) {
-      point.offers = [];
-    }
 
     return point;
   };

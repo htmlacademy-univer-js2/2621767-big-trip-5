@@ -22,7 +22,6 @@ export default class ButtonPointView extends AbstractView {
     this.element.disabled = disabled;
   };
 
-  // Исправленный обработчик
   #onNewPointButtonClick = (evt) => {
     evt.preventDefault();
     this.#clickAction();

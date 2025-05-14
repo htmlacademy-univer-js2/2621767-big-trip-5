@@ -1,23 +1,23 @@
 import { render, remove, RenderPosition } from '../framework/render';
-import PointRouteList from '../view/point-edit-view';
 import SortingView from '../view/sorting-view';
+import LoadingView from '../view/loading-view';
+import FailedLoadingView from '../view/failed-loading-view';
 import EmptyListView from '../view/empty-list-view';
 import EventPresenter from './event-presenter';
 import NewEventPresenter from './new-event-presenter';
 import { SORT_TYPE, ACTIONS, UPDATE_TYPE, FILTER_TYPE } from '../const';
 import { sortByDay, sortByTime, sortByPrice, filter } from '../utils';
-import { generateFilter } from '../mock/filter-mock';
+import EventsListView from '../view/event-list-view';
 
 export default class BoardPresenter {
-  #eventListComponent = new PointRouteList();
+  #eventListComponent = new EventsListView();
   #eventsContainer = null;
   #filterModel = null;
   #pointsListModel = null;
   #emptyPointListComponent = null;
-  #destinations = null;
-  #offers = null;
+  #destinations = [];
+  #offers = {};
   #boardEvents = [];
-  #filters = [];
   #eventPresenters = new Map();
   #sortComponent = null;
   #newEventPresenter = null;
@@ -25,6 +25,9 @@ export default class BoardPresenter {
   #filterType = FILTER_TYPE.EVERYTHING;
   #buttonPointPresenter = null;
   #isCreatingNewPoint = false;
+  #loadingView = new LoadingView();
+  #failedLoadingView = new FailedLoadingView();
+  #isLoading = true;
 
   constructor({ eventsContainer, filterModel, pointsListModel, buttonPointPresenter }) {
     this.#eventsContainer = eventsContainer;
@@ -39,42 +42,40 @@ export default class BoardPresenter {
       listComponent: this.#eventListComponent.element,
       pointsListModel: this.#pointsListModel,
       onDataChange: this.#changePointsList,
-      onDestroy: this.#onNewPointDestroy
+      onDestroy: this.#onNewPointDestroy,
     });
   }
 
-  init() {
-    this.#boardEvents = Array.isArray(this.#pointsListModel?.points)
-      ? [...this.#pointsListModel.points]
-      : [];
+  async init() {
+    render(this.#eventListComponent, this.#eventsContainer);
+    render(this.#loadingView, this.#eventListComponent.element);
 
-    this.#offers = Array.isArray(this.#pointsListModel?.offers)
-      ? [...this.#pointsListModel.offers]
-      : [];
-
-    this.#destinations = Array.isArray(this.#pointsListModel?.destinations)
-      ? [...this.#pointsListModel.destinations]
-      : [];
-
-    this.#filters = generateFilter(this.#boardEvents);
-    this.#renderSort();
-    this.#renderEventsList();
+    try {
+      await this.#pointsListModel.init();
+      this.#boardEvents = [...this.#pointsListModel.points];
+      this.#offers = { ...this.#pointsListModel.offers };
+      this.#destinations = [...this.#pointsListModel.destinations];
+      this.#renderBoard();
+    } catch (error) {
+      this.#isLoading = false;
+      remove(this.#loadingView);
+      render(this.#failedLoadingView, this.#eventListComponent.element);
+    } finally {
+      this.#isLoading = false;
+      remove(this.#loadingView);
+      if (this.#boardEvents.length === 0 && !this.#isLoading) {
+        this.#renderNoEvents();
+      }
+    }
   }
 
   createPoint() {
-    this.#newEventPresenter.init();
+    this.#newEventPresenter.init(this.#destinations, this.#offers);
   }
 
-  #renderEvent(event) {
-    const eventPresenter = new EventPresenter({
-      destinations: this.#destinations,
-      offers: this.#offers,
-      eventListContainer: this.#eventListComponent,
-      onDataChange: this.#changePointsList,
-      onViewChange: this.#onModeChange
-    });
-    eventPresenter.init(event);
-    this.#eventPresenters.set(event.id, eventPresenter);
+  #renderBoard() {
+    this.#renderSort();
+    this.#renderEventsList();
   }
 
   #onModeChange = () => {
@@ -83,9 +84,33 @@ export default class BoardPresenter {
   };
 
   #actions = {
-    [ACTIONS.UPDATE_POINT]: (type, data) => this.#pointsListModel.updatePoint(type, data),
-    [ACTIONS.ADD_POINT]: (type, data) => this.#pointsListModel.addPoint(type, data),
-    [ACTIONS.DELETE_POINT]: (type, data) => this.#pointsListModel.deletePoint(type, data)
+    [ACTIONS.UPDATE_POINT]: async (type, data) => {
+      try {
+        await this.#pointsListModel.updatePoint(type, data);
+        this.#eventPresenters.get(data.id)?.init(this.#pointsListModel.points.find((point) => point.id === data.id));
+      } catch (error) {
+        this.#eventPresenters.get(data.id)?.setAborting();
+      }
+    },
+    [ACTIONS.ADD_POINT]: async (type, data) => {
+      try {
+        await this.#pointsListModel.addPoint(type, data);
+        this.#isCreatingNewPoint = false;
+        this.#buttonPointPresenter.enableButton();
+        this.#clearEventsList();
+        this.#renderEventsList();
+      } catch (error) {
+        this.#newEventPresenter.setAborting();
+      }
+    },
+    [ACTIONS.DELETE_POINT]: async (type, data) => {
+      try {
+        await this.#pointsListModel.deletePoint(type, data);
+        this.#clearPoint(data.id);
+      } catch (error) {
+        this.#eventPresenters.get(data.id)?.setAborting();
+      }
+    },
   };
 
   #changePointsList = (actionType, updateType, update) => {
@@ -93,26 +118,31 @@ export default class BoardPresenter {
   };
 
   #updateEventList = (updateType, data) => {
-    this.#boardEvents = [...this.#pointsListModel.points];
-    const updateStrategies = {
-      [UPDATE_TYPE.PATCH]: () => this.#eventPresenters.get(data.id)?.init(data),
-      [UPDATE_TYPE.MINOR]: () => {
+    switch (updateType) {
+      case UPDATE_TYPE.PATCH:
+        this.#eventPresenters.get(data.id)?.init(data);
+        break;
+      case UPDATE_TYPE.MINOR:
         this.#clearEventsList();
         this.#renderEventsList();
-      },
-      [UPDATE_TYPE.MAJOR]: () => {
+        break;
+      case UPDATE_TYPE.MAJOR:
         this.#clearEventsList(true);
-        this.#renderEventsList();
-      }
-    };
-    updateStrategies[updateType]?.();
+        this.#renderBoard();
+        break;
+      case UPDATE_TYPE.INIT:
+        this.#isLoading = false;
+        remove(this.#loadingView);
+        this.#renderBoard();
+        break;
+    }
   };
 
   onNewPointButtonClick = () => {
     this.#isCreatingNewPoint = true;
     this.#filterModel.setFilter(UPDATE_TYPE.MAJOR, FILTER_TYPE.EVERYTHING);
     this.#buttonPointPresenter.disableButton();
-    this.#newEventPresenter.init();
+    this.#newEventPresenter.init(this.#destinations, this.#offers);
   };
 
   #onNewPointDestroy = ({ isCanceled }) => {
@@ -142,27 +172,45 @@ export default class BoardPresenter {
 
     this.#sortComponent = new SortingView({
       onSortTypeChange: this.#onSortTypeChange,
-      currentSortType: this.#currentSortType
+      currentSortType: this.#currentSortType,
     });
 
     render(this.#sortComponent, this.#eventsContainer, RenderPosition.AFTERBEGIN);
   }
 
   #renderEventsList() {
-    render(this.#eventListComponent, this.#eventsContainer);
-    const filteredPoints = this.points;
-    if (filteredPoints.length) {
-      const sorters = {
-        [SORT_TYPE.PRICE]: sortByPrice,
-        [SORT_TYPE.TIME]: sortByTime,
-        [SORT_TYPE.DAY]: sortByDay
-      };
-      const sorter = sorters[this.#currentSortType] || sortByDay;
-      const sortedPoints = [...filteredPoints].sort(sorter);
-      sortedPoints.forEach((event) => this.#renderEvent(event));
-    } else {
-      this.#renderNoEvents();
+    if (this.#isLoading) {
+      return;
     }
+
+    const filteredPoints = this.points;
+
+    if (!filteredPoints.length) {
+      this.#renderNoEvents();
+      return;
+    }
+
+    const sorter = {
+      [SORT_TYPE.PRICE]: sortByPrice,
+      [SORT_TYPE.TIME]: sortByTime,
+      [SORT_TYPE.DAY]: sortByDay
+    }[this.#currentSortType] || sortByDay;
+
+    filteredPoints.sort(sorter).forEach((event) => {
+      this.#renderEvent(event);
+    });
+  }
+
+  #renderEvent(event) {
+    const eventPresenter = new EventPresenter({
+      destinations: this.#destinations,
+      offers: this.#offers,
+      eventListContainer: this.#eventListComponent, // Передаем контейнер списка
+      onDataChange: this.#changePointsList,
+      onViewChange: this.#onModeChange,
+    });
+    eventPresenter.init(event);
+    this.#eventPresenters.set(event.id, eventPresenter);
   }
 
   #renderNoEvents() {
@@ -179,14 +227,21 @@ export default class BoardPresenter {
       remove(this.#emptyPointListComponent);
     }
 
-    if (resetSortType) {
+    if (resetSortType && this.#sortComponent) {
+      remove(this.#sortComponent);
+      this.#sortComponent = null;
       this.#currentSortType = SORT_TYPE.DAY;
-      this.#renderSort();
     }
   }
 
   get points() {
     this.#filterType = this.#filterModel.filter;
-    return filter[this.#filterType](this.#pointsListModel.points);
+    const filtered = filter[this.#filterType](this.#pointsListModel.points);
+    return filtered;
   }
+
+  #clearPoint = (id) => {
+    this.#eventPresenters.get(id)?.destroy();
+    this.#eventPresenters.delete(id);
+  };
 }

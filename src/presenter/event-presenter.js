@@ -41,6 +41,10 @@ export default class EventPresenter {
       offers: event.offers || []
     };
 
+    if (!this.#destinations.length) {
+      return;
+    }
+
     this.#eventComponent = new Point({
       event: {
         ...this.#event,

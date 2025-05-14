@@ -1,5 +1,8 @@
 import { isFutureEvent, isPastEvent, isPresentEvent } from './date-utils.js';
 
+const AUTHORIZATION = 'Basic vikaapi1234567';
+const API_URL = 'https://24.objects.htmlacademy.pro/big-trip';
+
 const FILTER_TYPE = {
   EVERYTHING:'EVERYTHING',
   FUTURE:'FUTURE',
@@ -30,6 +33,11 @@ const SORT_TYPE = {
 const MODE = {
   DEFAULT: 'DEFAULT',
   EDITING: 'EDITING',
+};
+
+const METHOD = {
+  GET: 'GET',
+  PUT: 'PUT'
 };
 
 const EVENT_TYPE = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
@@ -75,6 +83,8 @@ const UPDATE_TYPE = {
   PATCH: 'PATCH',
   MINOR: 'MINOR',
   MAJOR: 'MAJOR',
+  INIT: 'INIT',
+  ERROR: 'ERROR'
 };
 
-export {FILTER_TYPE, LIST_MESSAGES, FILTER, SORT_TYPE, MODE, EVENT_TYPE, CITIES, DESCRIPTIONS, ACTIONS, FORM_TYPE, POINT, UPDATE_TYPE};
+export {FILTER_TYPE, LIST_MESSAGES, FILTER, SORT_TYPE, MODE, EVENT_TYPE, CITIES, DESCRIPTIONS, ACTIONS, FORM_TYPE, POINT, UPDATE_TYPE, METHOD, AUTHORIZATION, API_URL};
