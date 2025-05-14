@@ -39,6 +39,6 @@ module.exports = {
     ],
   },
   experiments: {
-    topLevelAwait: true, // Включаем top-level-await
+    topLevelAwait: true,
   },
 }

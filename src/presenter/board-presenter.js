@@ -97,8 +97,8 @@ export default class BoardPresenter {
         await this.#pointsListModel.addPoint(type, data);
         this.#isCreatingNewPoint = false;
         this.#buttonPointPresenter.enableButton();
-        this.#clearEventsList(); // Очищаем список
-        this.#renderEventsList(); // Рендерим обновленный список
+        this.#clearEventsList();
+        this.#renderEventsList();
       } catch (error) {
         this.#newEventPresenter.setAborting();
       }
@@ -184,7 +184,6 @@ export default class BoardPresenter {
     }
 
     const filteredPoints = this.points;
-    console.log('Filtered points:', filteredPoints);
 
     if (!filteredPoints.length) {
       this.#renderNoEvents();
@@ -203,7 +202,6 @@ export default class BoardPresenter {
   }
 
   #renderEvent(event) {
-    console.log('Rendering event:', event);
     const eventPresenter = new EventPresenter({
       destinations: this.#destinations,
       offers: this.#offers,
@@ -239,8 +237,6 @@ export default class BoardPresenter {
   get points() {
     this.#filterType = this.#filterModel.filter;
     const filtered = filter[this.#filterType](this.#pointsListModel.points);
-    console.log('Current filter:', this.#filterType);
-    console.log('Filtered points:', filtered);
     return filtered;
   }
 

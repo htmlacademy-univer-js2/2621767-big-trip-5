@@ -8,7 +8,7 @@ import EventsApiService from './service/events-api-service';
 
 (async () => {
   const eventsApiService = new EventsApiService(API_URL, AUTHORIZATION);
-  const pointsListModel = new PointsListModel({ pointsApiService: eventsApiService }); // Передаем объект с pointsApiService
+  const pointsListModel = new PointsListModel({ pointsApiService: eventsApiService });
 
   const buttonPointPresenter = new ButtonPointPresenter({
     container: document.querySelector('.trip-main')
@@ -30,6 +30,6 @@ import EventsApiService from './service/events-api-service';
   });
 
   filterPresenter.init();
-  await boardPresenter.init(); // Теперь await будет работать внутри async функции
+  await boardPresenter.init();
   buttonPointPresenter.init({ onNewPointButtonClick: boardPresenter.onNewPointButtonClick });
 })();

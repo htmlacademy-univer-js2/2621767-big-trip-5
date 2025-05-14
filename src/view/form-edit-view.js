@@ -1,6 +1,6 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view';
-import { getFullDate, getOffersByType } from '../utils';
-import { EVENT_TYPE, POINT, FORM_TYPE } from '../const';
+import {getFullDate, getOffersByType} from '../utils';
+import {EVENT_TYPE, FORM_TYPE, POINT} from '../const';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 
@@ -157,10 +157,41 @@ export default class FormEditing extends AbstractStatefulView {
 
   reset = (event) => this.updateElement({event});
 
-  #onSubmitButtonElementClick = (event) => {
-    event.preventDefault();
-    this.#handleFormSubmit(this.#parseStateToPoint());
+  #onSubmitButtonElementClick = async (evt) => {
+    evt.preventDefault();
+
+    if (this._state.isDisabled) {
+      return;
+    }
+
+    try {
+      const pointToSave = this.#parseStateToPoint();
+
+      if (!this.#validatePointData(pointToSave)) {
+        return;
+      }
+
+      this.updateElement({
+        isDisabled: true,
+        isSaving: true,
+      });
+
+      await this.#handleFormSubmit(pointToSave);
+
+    } catch (error) {
+      this.updateElement({
+        isDisabled: false,
+        isSaving: false,
+      });
+    }
   };
+
+  #validatePointData = (point) => point.destination &&
+      point.destination !== 'unknown' &&
+      point.price > 0 &&
+      point.dateFrom &&
+      point.dateTo &&
+      point.dateFrom < point.dateTo;
 
   #changePointType = (event) => {
     this.updateElement({
@@ -300,16 +331,10 @@ export default class FormEditing extends AbstractStatefulView {
       ...this._state.event,
       destination: this._state.event.destination === undefined ? 'unknown' : this._state.event.destination,
       price: Number(this._state.event.price) || 0,
-      offers: Array.isArray(this._state.event.offers)
-        ? this._state.event.offers
-        : [],
+      offers: Array.isArray(this._state.event.offers) ? this._state.event.offers : [],
       dateFrom: this._state.event.dateFrom,
       dateTo: this._state.event.dateTo
     };
-
-    if (!point.offers.every((offer) => typeof offer === 'string' || typeof offer === 'number')) {
-      point.offers = [];
-    }
 
     return point;
   };

@@ -26,10 +26,10 @@ function createPointRouteTemplate(event, destinations, allOffers) {
     return validTypes.includes(normalizedType) ? normalizedType : defaultType;
   }
 
-  // Найдем пункт назначения по id
-  const pointDestination = destinations.find((dest) => dest.id === destination);
+  const destinationId = typeof destination === 'object' ? destination.id : destination;
+  const pointDestination = destinations.find((dest) => dest.id === destinationId);
+  const pointDestinationName = pointDestination?.name || 'Unknown city';
 
-  // Форматирование времени и длительности
   const startDate = formatEventDate(dateFrom);
   const startTime = formatEventTime(dateFrom);
   const endTime = formatEventTime(dateTo);
@@ -44,7 +44,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
                src="img/icons/${eventType}.png"
                alt="Event type icon">
         </div>
-        <h3 class="event__title">${eventType} ${pointDestination.name || 'Unknown city'}</h3> <!-- Используем name для вывода города -->
+        <h3 class="event__title">${eventType} ${pointDestinationName}</h3>
         <div class="event__schedule">
           <p class="event__time">
             <time class="event__start-time" datetime="${dateFrom.toISOString()}">${startTime}</time>
