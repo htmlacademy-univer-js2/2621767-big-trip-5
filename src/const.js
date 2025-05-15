@@ -37,7 +37,9 @@ const MODE = {
 
 const METHOD = {
   GET: 'GET',
-  PUT: 'PUT'
+  PUT: 'PUT',
+  POST: 'POST',
+  DELETE: 'DELETE',
 };
 
 const EVENT_TYPE = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
@@ -71,12 +73,13 @@ const FORM_TYPE = {
 
 const POINT = {
   type: 'flight',
-  dateFrom: null,
+  dateFrom: new Date().toISOString(),
+  dateTo: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(),
   destination: null,
-  dateTo: null,
   basePrice: 10,
   offers: [],
   isFavorite: false,
+  price: 10
 };
 
 const UPDATE_TYPE = {

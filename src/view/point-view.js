@@ -38,7 +38,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
 
   return `<li class="trip-events__item">
       <div class="event">
-        <time class="event__date" datetime="${dateFrom.toISOString()}">${startDate}</time>
+        <time class="event__date">${startDate}</time>
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42"
                src="img/icons/${eventType}.png"
@@ -47,9 +47,9 @@ function createPointRouteTemplate(event, destinations, allOffers) {
         <h3 class="event__title">${eventType} ${pointDestinationName}</h3>
         <div class="event__schedule">
           <p class="event__time">
-            <time class="event__start-time" datetime="${dateFrom.toISOString()}">${startTime}</time>
+            <time class="event__start-time">${startTime}</time>
             &mdash;
-            <time class="event__end-time" datetime="${dateTo.toISOString()}">${endTime}</time>
+            <time class="event__end-time">${endTime}</time>
           </p>
           <p class="event__duration">${duration}</p>
         </div>

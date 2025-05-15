@@ -29,6 +29,7 @@ function createOfferTemplate(offer, pointOffers) {
 
 function makeFormEditingTemplate(state, destinations = [], allOffers = [], formType = []) {
   const {id, type, destination, dateFrom, dateTo, price, offers} = state.event;
+  const {isDisabled, isSaving, isDeleting} = state;
 
   let pointDestination = destinations.find((dest) => dest?.id === destination);
 
@@ -45,6 +46,8 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
   const fullEndDate = dateTo ? getFullDate(dateTo) : '';
   const availableOffers = getOffersByType(type, allOffers);
   const pointTypeIsChecked = (eventType) => eventType === type ? 'checked' : '';
+  const deleteMessage = isDeleting ? 'Deleting...' : 'Delete';
+  const savingMessage = isSaving ? 'Saving...' : 'Save';
 
   return `<li class="trip-events__item">
             <form class="event event--edit" action="#" method="post">
@@ -97,8 +100,8 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                   <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${price}">
                 </div>
 
-                <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-                <button class="event__reset-btn" type="reset">${formType === FORM_TYPE.EDIT ? 'Delete' : 'Cancel'}</button>
+                <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}> ${savingMessage} </button>
+                <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
                 ${formType === FORM_TYPE.EDIT ? `<button class="event__rollup-btn" type="button">
                     <span class="visually-hidden">Open event</span>
                 </button>` : ''}
@@ -164,21 +167,22 @@ export default class FormEditing extends AbstractStatefulView {
       return;
     }
 
+    const pointToSave = this.#parseStateToPoint();
+
+    if (!this.#validatePointData(pointToSave)) {
+      this.shake();
+      return;
+    }
+
     try {
-      const pointToSave = this.#parseStateToPoint();
-
-      if (!this.#validatePointData(pointToSave)) {
-        return;
-      }
-
       this.updateElement({
         isDisabled: true,
         isSaving: true,
       });
 
       await this.#handleFormSubmit(pointToSave);
-
     } catch (error) {
+      this.shake();
       this.updateElement({
         isDisabled: false,
         isSaving: false,
@@ -248,9 +252,28 @@ export default class FormEditing extends AbstractStatefulView {
     this.#onRollButtonClick();
   };
 
-  #onDeleteButtonClick = (event) => {
+  #onDeleteButtonClick = async (event) => {
     event.preventDefault();
-    this.#handleDeleteClick(this._state.event);
+
+    if (this._state.isDisabled) {
+      return;
+    }
+
+    try {
+      this.updateElement({
+        isDisabled: true,
+        isDeleting: true,
+      });
+
+      await this.#handleDeleteClick(this._state.event);
+
+    } catch (error) {
+      this.shake();
+      this.updateElement({
+        isDisabled: false,
+        isDeleting: false,
+      });
+    }
   };
 
   #onDateEndCloseButton = ([date]) => {

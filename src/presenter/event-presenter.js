@@ -75,7 +75,7 @@ export default class EventPresenter {
     }
 
     if (this.#mode === MODE.EDITING) {
-      replace(this.#eventEditComponent, prevEventEditComponent);
+      replace(this.#eventComponent, prevEventEditComponent);
       this.#mode = MODE.DEFAULT;
     }
 
@@ -99,17 +99,55 @@ export default class EventPresenter {
     }
   }
 
-  #handleDeleteClick = (pointToDelete) => {
-    this.#handleDataChange(ACTIONS.DELETE_POINT, UPDATE_TYPE.MINOR, pointToDelete);
-    this.#replaceFormToEvent();
+  setAborting = () => {
+    if (this.#mode === MODE.EDITING && this.#eventEditComponent) {
+      this.#eventEditComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+        isDeleting: false,
+      });
+    } else if (this.#mode === MODE.DEFAULT && this.#eventComponent) {
+      this.#eventComponent.shake();
+    }
   };
 
-  #handleFormSubmit = (updatedEvent) => {
-    this.#handleDataChange(ACTIONS.UPDATE_POINT, UPDATE_TYPE.MINOR, {
-      ...updatedEvent,
-      offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
-    });
-    this.#replaceFormToEvent();
+  #handleDeleteClick = async (pointToDelete) => {
+    try {
+      this.#eventEditComponent.updateElement({
+        isDisabled: true,
+        isDeleting: true,
+      });
+
+      await this.#handleDataChange(ACTIONS.DELETE_POINT, UPDATE_TYPE.MINOR, pointToDelete);
+
+    } catch (err) {
+      this.#eventEditComponent.shake();
+      this.#eventEditComponent.updateElement({
+        isDisabled: false,
+        isDeleting: false,
+      });
+    }
+  };
+
+  #handleFormSubmit = async (updatedEvent) => {
+    try {
+      this.#eventEditComponent.updateElement({
+        isDisabled: true,
+        isSaving: true,
+      });
+
+      await this.#handleDataChange(ACTIONS.UPDATE_POINT, UPDATE_TYPE.MINOR, {
+        ...updatedEvent,
+        offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
+      });
+
+    } catch (err) {
+      this.#eventEditComponent.shake();
+      this.#eventEditComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+      });
+    }
   };
 
   #handleFavoriteClick = () => {
