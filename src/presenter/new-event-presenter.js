@@ -35,16 +35,14 @@ export default class NewEventPresenter {
     document.addEventListener('keydown', this.#onEscKeydown);
   }
 
-  destroy = ({isCanceled = true} = {}) => {
-    if (this.#pointNewComponent === null) {
-      return;
+  setAborting = () => {
+    if (this.#pointNewComponent) {
+      this.#pointNewComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+        isDeleting: false,
+      });
     }
-
-    remove(this.#pointNewComponent);
-    this.#pointNewComponent = null;
-    document.removeEventListener('keydown', this.#onEscKeydown);
-
-    this.#onDestroy({isCanceled});
   };
 
   #onEscKeydown = (event) => {
@@ -58,13 +56,37 @@ export default class NewEventPresenter {
     this.destroy();
   };
 
-  #handleSubmit = (point) => {
-    this.#onDataChange(
-      ACTIONS.ADD_POINT,
-      UPDATE_TYPE.MINOR,
-      point
-    );
+  setSavingState = (isSaving) => {
+    if (this.#pointNewComponent) {
+      this.#pointNewComponent.updateElement({
+        isDisabled: isSaving,
+        isSaving: isSaving
+      });
+    }
+  };
 
-    this.destroy({isCanceled: false});
+  #handleSubmit = async (point) => {
+    try {
+      this.setSavingState(true);
+
+      await this.#onDataChange(ACTIONS.ADD_POINT, UPDATE_TYPE.MINOR, point);
+
+    } catch (error) {
+      this.#pointNewComponent.shake();
+      this.setSavingState(false);
+      this.#pointNewComponent.showError('Не удалось сохранить. Попробуйте ещё раз.');
+    }
+  };
+
+  destroy = ({isCanceled = true, newPoint} = {}) => {
+    if (this.#pointNewComponent === null) {
+      return;
+    }
+
+    remove(this.#pointNewComponent);
+    this.#pointNewComponent = null;
+    document.removeEventListener('keydown', this.#onEscKeydown);
+
+    this.#onDestroy({isCanceled, newPoint});
   };
 }

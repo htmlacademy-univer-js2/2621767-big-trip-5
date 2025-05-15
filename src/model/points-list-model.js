@@ -69,21 +69,38 @@ export default class PointsListModel extends Observable {
     return adaptedPoint;
   }
 
-  async addPoint(updateType, point) {
-    this.#points = [point, ...this.#points];
-    this._notify(updateType, point);
+  async addPoint(updateType, update) {
+    const newPointRaw = await this.#pointsApiService.addPoint(update);
+    const newPointAdapted = this.#adaptPoint(newPointRaw);
+
+    if (!newPointAdapted.dateFrom || !newPointAdapted.dateTo || !(newPointAdapted.dateFrom instanceof Date) || !(newPointAdapted.dateTo instanceof Date)) {
+      throw new Error('Server returned invalid dates or adaptation failed');
+    }
+
+    this.#points = [newPointAdapted, ...this.#points];
+    this._notify(updateType, newPointAdapted);
+
+    return newPointAdapted;
   }
 
   async updatePoint(updateType, point) {
-    const updatedRaw = await this.#pointsApiService.updatePoint(point);
-    const updatedPoint = this.#adaptPoint(updatedRaw);
-    this.#points = updateItem(this.#points, updatedPoint);
-    this._notify(updateType, updatedPoint);
+    try {
+      const updatedRaw = await this.#pointsApiService.updatePoint(point);
+      const updatedPoint = this.#adaptPoint(updatedRaw);
+      this.#points = updateItem(this.#points, updatedPoint);
+      this._notify(updateType, updatedPoint);
+    } catch (err) {
+      throw new Error('Error updating point');
+    }
   }
 
-
   async deletePoint(updateType, point) {
-    this.#points = this.#points.filter((pointItem) => pointItem.id !== point.id);
-    this._notify(updateType, point);
+    try {
+      await this.#pointsApiService.deletePoint(point);
+      this.#points = this.#points.filter((pointItem) => pointItem.id !== point.id);
+      this._notify(updateType, point);
+    } catch (err) {
+      throw new Error('Error deleting point');
+    }
   }
 }
