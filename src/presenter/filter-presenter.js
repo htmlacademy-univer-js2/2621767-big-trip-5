@@ -1,6 +1,7 @@
 import FiltersView from '../view/filters-view';
-import { FILTER_TYPE, UPDATE_TYPE } from '../const';
+import { UPDATE_TYPE } from '../const';
 import {remove, render, replace} from '../framework/render';
+import {getAvailableFilters} from '../filters';
 
 export default class FilterPresenter {
   #filterContainer = null;
@@ -29,10 +30,7 @@ export default class FilterPresenter {
   }
 
   get filters() {
-    return Object.values(FILTER_TYPE).map((type) => ({
-      id: type,
-      name: type,
-    }));
+    return getAvailableFilters(this.#pointsListModel.points);
   }
 
   init() {
