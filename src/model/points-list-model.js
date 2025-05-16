@@ -26,60 +26,58 @@ export default class PointsListModel extends Observable {
   }
 
   async init() {
-    const [points, offers, destinations] = await Promise.all([
-      this.#pointsApiService.getPoints(),
-      this.#pointsApiService.getOffers(),
-      this.#pointsApiService.getDestinations(),
-    ]);
+    try {
+      const [points, offers, destinations] = await Promise.all([
+        this.#pointsApiService.getPoints(),
+        this.#pointsApiService.getOffers(),
+        this.#pointsApiService.getDestinations(),
+      ]);
 
-    if (!Array.isArray(offers)) {
-      throw new Error('Offers should be an array');
+      this.#offersByType = this.#transformOffers(offers);
+      this.#destinations = destinations;
+      this.#points = points.map(this.#adaptPoint);
+
+      this._notify(UPDATE_TYPE.INIT);
+    } catch (e) {
+      this.#points = [];
+      this.#offersByType = {};
+      this.#destinations = [];
+      this._notify(UPDATE_TYPE.INIT);
+      throw new Error('Failed to initialize PointsListModel');
     }
-
-    this.#points = points.map(this.#adaptPoint);
-    this.#offersByType = this.#transformOffers(offers);
-    this.#destinations = destinations;
-
-    this._notify(UPDATE_TYPE.INIT, null);
   }
 
   #transformOffers(rawOffers) {
-    return rawOffers.reduce((acc, offerGroup) => {
-      acc[offerGroup.type] = offerGroup.offers;
+    return rawOffers.reduce((acc, group) => {
+      acc[group.type] = group.offers;
       return acc;
     }, {});
   }
 
-  #adaptPoint(point) {
-    const adaptedPoint = {
+  #adaptPoint = (point) => {
+    const adapted = {
       ...point,
       price: point['base_price'],
       dateFrom: new Date(point['date_from']),
       dateTo: new Date(point['date_to']),
       isFavorite: point['is_favorite'],
-      offers: point['offers'] ?? [],
-      destination: point['destination']
+      // destination remains an ID
+      // offers remain an array of IDs
     };
 
-    delete adaptedPoint['base_price'];
-    delete adaptedPoint['date_from'];
-    delete adaptedPoint['date_to'];
-    delete adaptedPoint['is_favorite'];
+    delete adapted['base_price'];
+    delete adapted['date_from'];
+    delete adapted['date_to'];
+    delete adapted['is_favorite'];
 
-    return adaptedPoint;
-  }
+    return adapted;
+  };
 
   async addPoint(updateType, update) {
     const newPointRaw = await this.#pointsApiService.addPoint(update);
     const newPointAdapted = this.#adaptPoint(newPointRaw);
-
-    if (!newPointAdapted.dateFrom || !newPointAdapted.dateTo || !(newPointAdapted.dateFrom instanceof Date) || !(newPointAdapted.dateTo instanceof Date)) {
-      throw new Error('Server returned invalid dates or adaptation failed');
-    }
-
     this.#points = [newPointAdapted, ...this.#points];
     this._notify(updateType, newPointAdapted);
-
     return newPointAdapted;
   }
 
@@ -97,7 +95,7 @@ export default class PointsListModel extends Observable {
   async deletePoint(updateType, point) {
     try {
       await this.#pointsApiService.deletePoint(point);
-      this.#points = this.#points.filter((pointItem) => pointItem.id !== point.id);
+      this.#points = this.#points.filter((item) => item.id !== point.id);
       this._notify(updateType, point);
     } catch (err) {
       throw new Error('Error deleting point');
