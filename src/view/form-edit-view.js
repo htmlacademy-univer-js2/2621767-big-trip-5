@@ -106,7 +106,7 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                   <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${price}">
                 </div>
 
-                <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}> ${savingMessage} </button>
+                <button class="event__save-btn btn btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>${savingMessage}</button>
                 <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
                 ${formType === FORM_TYPE.EDIT ? `<button class="event__rollup-btn" type="button">
                     <span class="visually-hidden">Open event</span>
@@ -146,9 +146,10 @@ export default class FormEditing extends AbstractStatefulView {
   #datepickerEnd = null;
   #onResetClick = null;
   #onDeleteClick = null;
+  #onFormClose = null;
   #type;
 
-  constructor({event = POINT, destinations, offers, onRollButtonClick, onSubmitButtonClick, onDeleteClick, onResetClick, type = FORM_TYPE.EDIT}) {
+  constructor({event = POINT, destinations, offers, onRollButtonClick, onSubmitButtonClick, onDeleteClick, onResetClick, onFormClose, type = FORM_TYPE.EDIT}) {
     super();
     this._setState({event});
     this.#destinations = destinations || [];
@@ -158,6 +159,7 @@ export default class FormEditing extends AbstractStatefulView {
     this.#handleDeleteClick = onDeleteClick;
     this.#onDeleteClick = onDeleteClick;
     this.#onResetClick = onResetClick;
+    this.#onFormClose = onFormClose;
     this.#type = type;
     this._restoreHandlers();
   }
@@ -168,7 +170,7 @@ export default class FormEditing extends AbstractStatefulView {
 
   reset = (event) => this.updateElement({event});
 
-  #onSubmitButtonElementClick = async (evt) => {
+  #onSubmitButtonElementClick = (evt) => { // Removed 'async'
     evt.preventDefault();
 
     if (this._state.isDisabled) {
@@ -182,20 +184,15 @@ export default class FormEditing extends AbstractStatefulView {
       return;
     }
 
-    try {
-      this.updateElement({
-        isDisabled: true,
-        isSaving: true,
-      });
+    // Update UI to "Saving..." and disable controls.
+    this.updateElement({
+      isDisabled: true,
+      isSaving: true,
+    });
 
-      await this.#handleFormSubmit(pointToSave);
-    } catch (error) {
-      this.shake();
-      this.updateElement({
-        isDisabled: false,
-        isSaving: false,
-      });
-    }
+    // The presenter now handles the success/failure logic.
+    // No await, no try-catch.
+    this.#handleFormSubmit(pointToSave);
   };
 
   #validatePointData = (point) => point.destination &&
@@ -227,10 +224,9 @@ export default class FormEditing extends AbstractStatefulView {
   #onOffersChange = (event) => {
     const offerId = event.target.value;
     const currentOffers = [...this._state.event.offers];
-
     const normalizedId = isNaN(Number(offerId)) ? offerId : Number(offerId);
 
-    this._setState({
+    this.updateElement({
       event: {
         ...this._state.event,
         offers: currentOffers.includes(normalizedId)
@@ -337,24 +333,28 @@ export default class FormEditing extends AbstractStatefulView {
 
   #formValidation = () => {
     const formNode = this.element.querySelector('form');
-    const destInput = this.element.querySelector('.event__input--destination');
-    const priceInput = this.element.querySelector('.event__input--price');
-    const dateFromInput = this.element.querySelector('[name="event-start-time"]');
-    const dateToInput = this.element.querySelector('[name="event-end-time"]');
+    if (!formNode) return;
 
-    const destValue = destInput?.value || '';
-    const priceValue = priceInput?.value || '';
-    const dateFrom = dateFromInput?.value || '';
-    const dateTo = dateToInput?.value || '';
-
-    const isDurationValid = dateFrom && dateTo;
-    const isValid = priceValue && Number(priceValue) > 0 && destValue && isDurationValid;
-
-    formNode.querySelector('.event__save-btn').disabled = !isValid;
+    const destInput = formNode.querySelector('.event__input--destination');
+    const priceInput = formNode.querySelector('.event__input--price');
+    const dateFromInput = formNode.querySelector('[name="event-start-time"]');
+    const dateToInput = formNode.querySelector('[name="event-end-time"]');
     const saveButton = formNode.querySelector('.event__save-btn');
-    if (saveButton) {
-      saveButton.disabled = !isValid;
-    }
+
+    if (!destInput || !priceInput || !dateFromInput || !dateToInput || !saveButton) return;
+
+    const destValue = destInput.value.trim();
+    const priceValue = Number(priceInput.value);
+    const dateFrom = dateFromInput.value;
+    const dateTo = dateToInput.value;
+
+    const isValid = priceValue > 0 &&
+      destValue &&
+      dateFrom &&
+      dateTo &&
+      this.#destinations.some(dest => dest.name === destValue);
+
+    saveButton.disabled = !isValid || this._state.isDisabled;
   };
 
   #parseStateToPoint = () => {

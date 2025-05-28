@@ -71,7 +71,8 @@ export default class EventPresenter {
       offers: this.#offers,
       onRollButtonClick: () => this.#replaceFormToEvent(true), // Сброс при нажатии на RollUp
       onSubmitButtonClick: this.#handleFormSubmit,
-      onDeleteClick: this.#handleDeleteClick
+      onDeleteClick: this.#handleDeleteClick,
+      onFormClose: this.closeEditForm
     });
 
     if (!prevEventComponent || !prevEventEditComponent) {
@@ -112,7 +113,7 @@ export default class EventPresenter {
           isSaving: false,
           isDeleting: false,
         });
-      }, '.event--edit');
+      });
     } else if (this.#mode === MODE.DEFAULT) {
       this.#eventComponent.shake();
     }
@@ -120,18 +121,15 @@ export default class EventPresenter {
 
   #handleDeleteClick = async (pointToDelete) => {
     try {
-      this.#eventEditComponent.updateElement({
-        isDisabled: true,
-        isDeleting: true,
-      });
       await this.#handleDataChange(ACTIONS.DELETE_POINT, UPDATE_TYPE.MINOR, pointToDelete);
     } catch (err) {
-      this.setAborting(); // Вызов setAborting для правильной обработки состояния
+      this.setAborting();
     }
   };
 
+  // src/presenter/event-presenter.js
+
   #handleFormSubmit = async (updatedEvent) => {
-    // Проверяем, действительно ли данные изменились перед отправкой
     const isMinorUpdate =
       this.#event.dateFrom.getTime() === updatedEvent.dateFrom.getTime() &&
       this.#event.dateTo.getTime() === updatedEvent.dateTo.getTime() &&
@@ -143,22 +141,22 @@ export default class EventPresenter {
     const updateType = isMinorUpdate ? UPDATE_TYPE.PATCH : UPDATE_TYPE.MINOR;
 
     try {
-      this.#eventEditComponent.updateElement({
-        isDisabled: true,
-        isSaving: true,
-      });
-
-      await this.#handleDataChange(ACTIONS.UPDATE_POINT, updateType, {
-        ...updatedEvent,
-        offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
-      });
-
-      // Если сохранение прошло успешно, форма закрывается
-      this.#replaceFormToEvent();
+      await this.#handleDataChange(
+        ACTIONS.UPDATE_POINT,
+        updateType,
+        updatedEvent
+      );
+      // The form will be closed automatically when the board re-renders
+      // with the updated data. Do not call this.closeEditForm() here.
 
     } catch (err) {
-      this.setAborting(); // Вызов setAborting для правильной обработки состояния
+      // If the request fails, the form should remain open in an error state.
+      this.setAborting();
     }
+  };
+
+  closeEditForm = () => {
+    this.#replaceFormToEvent();
   };
 
   #handleFavoriteClick = () => {
