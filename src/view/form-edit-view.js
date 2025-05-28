@@ -107,7 +107,7 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                 </div>
 
                 <button class="event__save-btn btn btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>${savingMessage}</button>
-                <button class="event__reset-btn" type="button" ${isDisabled ? 'disabled' : ''}>${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
+                <button class="event__reset-btn" type="button">${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
                 ${formType === FORM_TYPE.EDIT ? `<button class="event__rollup-btn" type="button">
                     <span class="visually-hidden">Open event</span>
                 </button>` : ''}
