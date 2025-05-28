@@ -56,9 +56,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
         <p class="event__price">
           &euro;&nbsp;<span class="event__price-value">${price}</span>
         </p>
-        <section class="event__section event__section--offers">
-          <h4 class="visually-hidden">Offers:</h4>
-          <ul class="event__selected-offers">
+        <ul class="event__selected-offers">
             ${selectedOffers.map((offer) => `
               <li class="event__offer">
                 <span class="event__offer-title">${offer.title}</span>
@@ -66,8 +64,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
                 <span class="event__offer-price">${offer.price}</span>
               </li>
             `).join('')}
-          </ul>
-        </section>
+        </ul>
         <button class="event__favorite-btn ${favoriteClass}" type="button">
           <span class="visually-hidden">Add to favorite</span>
           <svg class="event__favorite-icon" width="28" height="28" viewBox="0 0 28 28">

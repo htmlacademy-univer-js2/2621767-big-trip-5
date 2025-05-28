@@ -59,39 +59,28 @@ function formatEventDuration(startDate, endDate) {
     return '';
   }
 
-  const diffInMilliseconds = dayjs(endDate).diff(dayjs(startDate));
-  const eventDuration = dayjs.duration(diffInMilliseconds);
+  const diffInMs = dayjs(endDate).diff(dayjs(startDate));
 
-  const years = eventDuration.years();
-  const months = eventDuration.months();
-  const days = eventDuration.days();
-  const hours = eventDuration.hours();
-  const minutes = eventDuration.minutes();
+  const totalMinutes = Math.floor(diffInMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
 
   let result = '';
 
-  if (years > 0) {
-    result += `${years}Y `;
+  if (days > 0) {
+    result += `${String(days).padStart(2, '0')}D `;
   }
 
-  if (months > 0 || years > 0) {
-    result += `${months}M `;
+  if (hours > 0 || days > 0) {
+    result += `${String(hours).padStart(2, '0')}H `;
   }
 
-  if (days > 0 || months > 0 || years > 0) {
-    result += `${days}D `;
-  }
+  result += `${String(minutes).padStart(2, '0')}M`;
 
-  if (hours > 0 || days > 0 || months > 0 || years > 0) {
-    result += `${hours}H `;
-  }
-
-  result += `${minutes}M`;
-
-  result = result.replace(/^0[YMDH]\s+/g, '').trim();
-
-  return result;
+  return result.trim();
 }
+
 
 function isEscapeKey(evt) {
   return evt.key === 'Escape';

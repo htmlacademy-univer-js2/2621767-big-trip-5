@@ -49,6 +49,9 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
   const deleteMessage = isDeleting ? 'Deleting...' : 'Delete';
   const savingMessage = isSaving ? 'Saving...' : 'Save';
 
+  const hasDestinationInfo = pointDestination?.description || pointDestination?.pictures?.length > 0;
+  const hasPhotos = pointDestination?.pictures?.length > 0;
+
   return `<li class="trip-events__item">
             <form class="event event--edit" action="#" method="post">
               <header class="event__header">
@@ -70,18 +73,21 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                   </div>
                 </div>
 
-                <div class="event__field-group  event__field-group--destination">
-                  <label class="event__label  event__type-output" for="event-destination-${id || 'new'}">
+                <div class="event__field-group event__field-group--destination">
+                  <label class="event__label event__type-output" for="event-destination-${id || 'new'}">
                     ${type}
                   </label>
-                  <select class="event__input  event__input--destination" id="event-destination-${id || 'new'}" name="event-destination">
-                    <option value="" ${!pointDestination?.name ? 'selected' : ''} disabled>Выберите пункт назначения</option>
-                    ${destinations.map((dest) =>
-    `<option value="${dest.name}" ${pointDestination?.name === dest.name ? 'selected' : ''}>
-                        ${dest.name}
-                      </option>`
-  ).join('')}
-                  </select>
+                  <input
+                    class="event__input event__input--destination"
+                    id="event-destination-${id || 'new'}"
+                    list="destinations-list-${id || 'new'}"
+                    name="event-destination"
+                    value="${pointDestination?.name || ''}"
+                    placeholder="Выберите или введите пункт назначения"
+                  >
+                  <datalist id="destinations-list-${id || 'new'}">
+                    ${destinations.map((dest) => `<option value="${dest.name}"></option>`).join('')}
+                  </datalist>
                 </div>
 
                 <div class="event__field-group  event__field-group--time">
@@ -114,15 +120,17 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                       ${availableOffers.map((option) => createOfferTemplate(option, offers)).join('')}
                     </div>
                   </section>` : ''}
+                ${hasDestinationInfo ? `
                 <section class="event__section  event__section--destination">
                   <h3 class="event__section-title  event__section-title--destination">Destination</h3>
-                  <p class="event__destination-description">${pointDestination?.description}</p>
+                  ${pointDestination?.description ? `<p class="event__destination-description">${pointDestination.description}</p>` : ''}
+                  ${hasPhotos ? `
                   <div class="event__photos-container">
                     <div class="event__photos-tape">
-                      ${pointDestination?.pictures?.map((picture) => `<img class="event__photo" src="${picture.src}" alt="${picture.alt}">`).join('')}
+                      ${pointDestination.pictures.map((picture) => `<img class="event__photo" src="${picture.src}" alt="${picture.alt}">`).join('')}
                     </div>
-                  </div>
-                </section>
+                  </div>` : ''}
+                </section>` : ''}
               </section>
             </form>
           </li>`;
@@ -191,11 +199,11 @@ export default class FormEditing extends AbstractStatefulView {
   };
 
   #validatePointData = (point) => point.destination &&
-      point.destination !== 'unknown' &&
-      point.price > 0 &&
-      point.dateFrom &&
-      point.dateTo &&
-      point.dateFrom < point.dateTo;
+    point.destination !== 'unknown' &&
+    point.price > 0 &&
+    point.dateFrom &&
+    point.dateTo &&
+    point.dateFrom < point.dateTo;
 
   #changePointType = (event) => {
     this.updateElement({

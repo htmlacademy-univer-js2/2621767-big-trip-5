@@ -73,13 +73,13 @@ const FORM_TYPE = {
 
 const POINT = {
   type: 'flight',
-  dateFrom: new Date().toISOString(),
-  dateTo: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(),
+  dateFrom: '',
+  dateTo: '',
   destination: null,
   basePrice: 10,
   offers: [],
   isFavorite: false,
-  price: 10
+  price: 0
 };
 
 const UPDATE_TYPE = {

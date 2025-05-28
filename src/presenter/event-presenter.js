@@ -1,3 +1,5 @@
+// src/presenter/event-presenter.js
+
 import { render, replace, remove } from '../framework/render';
 import FormEditing from '../view/form-edit-view';
 import Point from '../view/point-view';
@@ -15,10 +17,15 @@ export default class EventPresenter {
   #handleViewChange = null;
   #mode = MODE.DEFAULT;
 
+  get event() {
+    return this.#event;
+  }
+
   #onEscKeydown = (event) => {
     if (isEscapeKey(event)) {
       event.preventDefault();
-      this.#replaceFormToEvent();
+      // При сбросе формы редактирования, передаем оригинальные данные точки
+      this.#replaceFormToEvent(true); // Передаем true, чтобы сбросить форму
     }
   };
 
@@ -42,6 +49,8 @@ export default class EventPresenter {
     };
 
     if (!this.#destinations.length) {
+      // Это может произойти, если destinations не были загружены
+      // Лучше добавить обработку ошибки или индикатор загрузки
       return;
     }
 
@@ -60,7 +69,7 @@ export default class EventPresenter {
       event: this.#event,
       destinations: this.#destinations,
       offers: this.#offers,
-      onRollButtonClick: this.#replaceFormToEvent,
+      onRollButtonClick: () => this.#replaceFormToEvent(true), // Сброс при нажатии на RollUp
       onSubmitButtonClick: this.#handleFormSubmit,
       onDeleteClick: this.#handleDeleteClick
     });
@@ -70,13 +79,11 @@ export default class EventPresenter {
       return;
     }
 
+    // Логика замены компонентов в зависимости от текущего режима
     if (this.#mode === MODE.DEFAULT) {
       replace(this.#eventComponent, prevEventComponent);
-    }
-
-    if (this.#mode === MODE.EDITING) {
-      replace(this.#eventComponent, prevEventEditComponent);
-      this.#mode = MODE.DEFAULT;
+    } else if (this.#mode === MODE.EDITING) {
+      replace(this.#eventEditComponent, prevEventEditComponent);
     }
 
     remove(prevEventComponent);
@@ -84,29 +91,29 @@ export default class EventPresenter {
   }
 
   destroy() {
-    if (this.#eventComponent) {
-      remove(this.#eventComponent);
-    }
-    if (this.#eventEditComponent) {
-      remove(this.#eventEditComponent);
-    }
+    remove(this.#eventComponent);
+    remove(this.#eventEditComponent);
     document.removeEventListener('keydown', this.#onEscKeydown);
+    this.#mode = MODE.DEFAULT;
   }
 
   resetView() {
     if (this.#mode !== MODE.DEFAULT) {
-      this.#replaceFormToEvent();
+      this.#replaceFormToEvent(true); // Сбрасываем форму при resetView
     }
   }
 
   setAborting = () => {
-    if (this.#mode === MODE.EDITING && this.#eventEditComponent) {
-      this.#eventEditComponent.updateElement({
-        isDisabled: false,
-        isSaving: false,
-        isDeleting: false,
-      });
-    } else if (this.#mode === MODE.DEFAULT && this.#eventComponent) {
+    if (this.#mode === MODE.EDITING) {
+      // Использование колбэка для сброса состояния формы после анимации
+      this.#eventEditComponent.shake(() => {
+        this.#eventEditComponent.updateElement({
+          isDisabled: false,
+          isSaving: false,
+          isDeleting: false,
+        });
+      }, '.event--edit');
+    } else if (this.#mode === MODE.DEFAULT) {
       this.#eventComponent.shake();
     }
   };
@@ -117,36 +124,40 @@ export default class EventPresenter {
         isDisabled: true,
         isDeleting: true,
       });
-
       await this.#handleDataChange(ACTIONS.DELETE_POINT, UPDATE_TYPE.MINOR, pointToDelete);
-
     } catch (err) {
-      this.#eventEditComponent.shake();
-      this.#eventEditComponent.updateElement({
-        isDisabled: false,
-        isDeleting: false,
-      });
+      this.setAborting(); // Вызов setAborting для правильной обработки состояния
     }
   };
 
   #handleFormSubmit = async (updatedEvent) => {
+    // Проверяем, действительно ли данные изменились перед отправкой
+    const isMinorUpdate =
+      this.#event.dateFrom.getTime() === updatedEvent.dateFrom.getTime() &&
+      this.#event.dateTo.getTime() === updatedEvent.dateTo.getTime() &&
+      this.#event.price === updatedEvent.price &&
+      this.#event.type === updatedEvent.type &&
+      this.#event.destination === updatedEvent.destination &&
+      JSON.stringify(this.#event.offers.sort()) === JSON.stringify(updatedEvent.offers.sort());
+
+    const updateType = isMinorUpdate ? UPDATE_TYPE.PATCH : UPDATE_TYPE.MINOR;
+
     try {
       this.#eventEditComponent.updateElement({
         isDisabled: true,
         isSaving: true,
       });
 
-      await this.#handleDataChange(ACTIONS.UPDATE_POINT, UPDATE_TYPE.MINOR, {
+      await this.#handleDataChange(ACTIONS.UPDATE_POINT, updateType, {
         ...updatedEvent,
         offers: Array.isArray(updatedEvent.offers) ? updatedEvent.offers : []
       });
 
+      // Если сохранение прошло успешно, форма закрывается
+      this.#replaceFormToEvent();
+
     } catch (err) {
-      this.#eventEditComponent.shake();
-      this.#eventEditComponent.updateElement({
-        isDisabled: false,
-        isSaving: false,
-      });
+      this.setAborting(); // Вызов setAborting для правильной обработки состояния
     }
   };
 
@@ -158,14 +169,20 @@ export default class EventPresenter {
   };
 
   #replaceEventToForm = () => {
-    this.#handleViewChange();
+    this.#handleViewChange('edit', this.#event.id); // Уведомляем BoardPresenter
+    // Рендерим форму редактирования
     replace(this.#eventEditComponent, this.#eventComponent);
     document.addEventListener('keydown', this.#onEscKeydown);
     this.#mode = MODE.EDITING;
   };
 
-  #replaceFormToEvent = () => {
-    if (this.#eventEditComponent) {
+  #replaceFormToEvent = (shouldReset = false) => {
+    if (this.#mode === MODE.DEFAULT) {
+      return;
+    }
+
+    if (shouldReset) {
+      // Сбросить форму редактирования до исходных значений
       this.#eventEditComponent.reset(this.#event);
     }
     replace(this.#eventComponent, this.#eventEditComponent);
