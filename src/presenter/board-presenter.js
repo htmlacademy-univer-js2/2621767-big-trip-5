@@ -1,5 +1,3 @@
-// src/presenter/board-presenter.js
-
 import {remove, render, RenderPosition, replace} from '../framework/render';
 import SortingView from '../view/sorting-view';
 import LoadingView from '../view/loading-view';
@@ -46,10 +44,9 @@ export default class BoardPresenter {
 
     this.#newEventPresenter = new NewEventPresenter({
       listComponent: this.#eventListComponent.element,
-      pointsListModel: this.#pointsListModel,
+      pointsListModel: this.#pointsListModel, // Это может быть лишним, если модель передается в init PointListModel
       onDataChange: this.#changePointsList,
       onDestroy: this.#onNewPointDestroy,
-      // No need for a separate onActivate, init will handle it
     });
 
     this.#buttonPointPresenter.init({
@@ -72,11 +69,12 @@ export default class BoardPresenter {
       this.#isLoading = false;
       remove(this.#loadingView);
       render(this.#failedLoadingView, this.#eventListComponent.element);
-      this.#buttonPointPresenter.disableButton(); // Если загрузка провалилась, кнопка остается отключенной
+      this.#buttonPointPresenter.disableButton();
     } finally {
       this.#isLoading = false;
-      remove(this.#loadingView);
-      if (this.points.length === 0 && !this.#isCreatingNewPoint) {
+      remove(this.#loadingView); // Всегда удаляем загрузчик, даже при ошибке
+      if (this.points.length === 0 && !this.#isCreatingNewPoint && !this.#failedLoadingView.element) {
+        // Условие для рендера EmptyListView только если нет данных И НЕ загрузка И НЕ ошибка загрузки
         this.#renderNoEvents();
       }
 
@@ -150,18 +148,13 @@ export default class BoardPresenter {
       console.log('ACTION: ADD_POINT', type, data);
       try {
         this.#uiBlocker.block();
-
-        // Добавляем событие в модель
         await this.#pointsListModel.addPoint(type, data);
-
         console.log('Point added to model successfully');
-
-        // НЕ вызываем onDestroy здесь - это должен делать NewEventPresenter
-
+        // --- Ключевое изменение: вызываем destroy() ТОЛЬКО здесь, после успешного добавления ---
+        this.#newEventPresenter.destroy({ isCanceled: false, newPoint: data });
       } catch (error) {
         console.error('Error adding point:', error);
         this.#newEventPresenter.setAborting();
-        throw error; // Пробрасываем ошибку для обработки в NewEventPresenter
       } finally {
         this.#uiBlocker.unblock();
       }
@@ -211,14 +204,13 @@ export default class BoardPresenter {
       case UPDATE_TYPE.INIT:
         this.#isLoading = false;
         remove(this.#loadingView);
-        this.#renderBoard();
+        // Если инициализация прошла успешно, и нет ошибок загрузки,
+        // то this.#renderBoard() уже вызывается в init()
+        // this.#renderBoard(); // Этот вызов здесь лишний, так как уже есть в init().
         this.#buttonPointPresenter.enableButton();
         break;
     }
   }
-
-
-  // Removed #onNewPointFormActivate as its logic is now handled in createPoint and NewEventPresenter.init directly.
 
   onNewPointButtonClick = () => {
     // This function is called by ButtonPointPresenter.
@@ -234,11 +226,19 @@ export default class BoardPresenter {
     this.#buttonPointPresenter.enableButton();
 
     // Если событие было отменено И нет других событий - показываем пустой список
-    if (isCanceled && this.points.length === 0) {
+    // Также, если есть EmptyListView из-за отсутствия точек, нужно его показать
+    // Или если это не отмена, а успешное добавление, и нет других точек, то тоже нужно перерисовать пустой список
+    if ((isCanceled && this.points.length === 0) || (newPoint && this.points.length === 1 && this.#filterModel.filter === FILTER_TYPE.EVERYTHING)) {
       this.#renderNoEvents();
+    } else if (this.points.length > 0 && this.#emptyPointListComponent) {
+      remove(this.#emptyPointListComponent);
+      this.#emptyPointListComponent = null;
+      // Возможно, здесь нужно рендерить eventListComponent, если он был удален
+      if (!this.#eventListComponent.element.parentNode) {
+        render(this.#eventListComponent, this.#eventsContainer);
+      }
     }
-    // Если событие создано успешно - ничего не делаем
-    // Модель уже уведомит об изменении через observer
+
 
     console.log('onNewPointDestroy completed');
   }
@@ -256,17 +256,30 @@ export default class BoardPresenter {
   };
 
   #renderSort() {
-    if (this.#sortComponent !== null) {
-      remove(this.#sortComponent);
+    // Если список точек пуст, или если загрузка не завершена, или если ошибка загрузки, не рендерим сортировку
+    if (this.points.length === 0 && !this.#isCreatingNewPoint && !this.#isLoading && !this.#failedLoadingView.element) {
+      if (this.#sortComponent) {
+        remove(this.#sortComponent);
+        this.#sortComponent = null;
+      }
+      return;
     }
+
+    const prevSortComponent = this.#sortComponent;
 
     this.#sortComponent = new SortingView({
       onSortTypeChange: this.#onSortTypeChange,
       currentSortType: this.#currentSortType,
     });
 
-    render(this.#sortComponent, this.#eventsContainer, RenderPosition.AFTERBEGIN);
+    if (prevSortComponent === null) {
+      render(this.#sortComponent, this.#eventsContainer, RenderPosition.AFTERBEGIN);
+    } else {
+      replace(this.#sortComponent, prevSortComponent);
+      remove(prevSortComponent);
+    }
   }
+
 
   #renderEventsList() {
     console.log('renderEventsList called');
@@ -279,8 +292,8 @@ export default class BoardPresenter {
       this.#emptyPointListComponent = null;
     }
 
-    // Если нет событий И не создается новое событие И не идет загрузка
-    if (!filteredPoints.length && !this.#isCreatingNewPoint && !this.#isLoading) {
+    // Если нет событий И не создается новое событие И не идет загрузка И НЕ ошибка загрузки
+    if (!filteredPoints.length && !this.#isCreatingNewPoint && !this.#isLoading && !this.#failedLoadingView.element) {
       this.#renderNoEvents();
       return;
     }
@@ -330,7 +343,7 @@ export default class BoardPresenter {
     this.#eventPresenters.forEach((presenter) => presenter.destroy());
     this.#eventPresenters.clear();
 
-    // ВАЖНО: НЕ уничтожаем NewEventPresenter если мы в процессе создания
+    // НЕ уничтожаем NewEventPresenter если мы в процессе создания
     // Он должен уничтожаться только через свой собственный destroy
 
     // Удаляем компонент пустого списка
@@ -339,9 +352,11 @@ export default class BoardPresenter {
       this.#emptyPointListComponent = null;
     }
 
-    if (resetSortType && this.#sortComponent) {
-      remove(this.#sortComponent);
-      this.#sortComponent = null;
+    if (resetSortType) {
+      if (this.#sortComponent) {
+        remove(this.#sortComponent);
+        this.#sortComponent = null;
+      }
       this.#currentSortType = SORT_TYPE.DAY;
     }
 

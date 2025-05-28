@@ -1,5 +1,3 @@
-// src/presenter/event-presenter.js
-
 import { render, replace, remove } from '../framework/render';
 import FormEditing from '../view/form-edit-view';
 import Point from '../view/point-view';
@@ -21,11 +19,13 @@ export default class EventPresenter {
     return this.#event;
   }
 
+  // Изменено: теперь этот метод не просто заменяет форму, но и вызывает resetView,
+  // что соответствует поведению при закрытии формы без сохранения.
   #onEscKeydown = (event) => {
     if (isEscapeKey(event)) {
       event.preventDefault();
-      // При сбросе формы редактирования, передаем оригинальные данные точки
-      this.#replaceFormToEvent(true); // Передаем true, чтобы сбросить форму
+      this.resetView(); // Используем resetView для сброса и закрытия формы
+      // document.removeEventListener('keydown', this.#onEscKeydown); // Это уже делается в resetView -> #replaceFormToEvent
     }
   };
 
@@ -35,6 +35,8 @@ export default class EventPresenter {
     this.#eventListContainer = eventListContainer;
     this.#handleDataChange = onDataChange;
     this.#handleViewChange = onViewChange;
+
+    this.resetView = this.resetView.bind(this);
   }
 
   init(event) {
@@ -49,8 +51,12 @@ export default class EventPresenter {
     };
 
     if (!this.#destinations.length) {
-      // Это может произойти, если destinations не были загружены
-      // Лучше добавить обработку ошибки или индикатор загрузки
+      // Это условие означает, что данные еще не загружены или произошла ошибка загрузки.
+      // В таком случае, возможно, не стоит пытаться рендерить компоненты.
+      // Однако, если это происходит при инициализации новой точки,
+      // то она должна быть создана с пустыми данными для выбора.
+      // Если это существующая точка, и нет данных, то, вероятно, проблема.
+      // В рамках текущей задачи просто оставляем как есть, но это место стоит обдумать.
       return;
     }
 
@@ -69,10 +75,10 @@ export default class EventPresenter {
       event: this.#event,
       destinations: this.#destinations,
       offers: this.#offers,
-      onRollButtonClick: () => this.#replaceFormToEvent(true), // Сброс при нажатии на RollUp
+      onRollButtonClick: this.resetView, // Изменено: используем resetView
       onSubmitButtonClick: this.#handleFormSubmit,
       onDeleteClick: this.#handleDeleteClick,
-      onFormClose: this.closeEditForm
+      // onFormClose: this.closeEditForm // Эта строка не нужна, так как onRollButtonClick теперь делает то же самое
     });
 
     if (!prevEventComponent || !prevEventEditComponent) {
@@ -80,7 +86,6 @@ export default class EventPresenter {
       return;
     }
 
-    // Логика замены компонентов в зависимости от текущего режима
     if (this.#mode === MODE.DEFAULT) {
       replace(this.#eventComponent, prevEventComponent);
     } else if (this.#mode === MODE.EDITING) {
@@ -94,19 +99,57 @@ export default class EventPresenter {
   destroy() {
     remove(this.#eventComponent);
     remove(this.#eventEditComponent);
-    document.removeEventListener('keydown', this.#onEscKeydown);
+    document.removeEventListener('keydown', this.#onEscKeydown); // Это уже правильно.
     this.#mode = MODE.DEFAULT;
   }
 
+  // Этот метод теперь является центральным для сброса и закрытия формы
   resetView() {
+    // В отличие от примера, у вас есть reset(this.#event) для формы,
+    // что позволяет ей вернуться в исходное состояние при отмене.
+    // Если mode === MODE.DEFAULT, это значит, что форма уже не открыта,
+    // или это не режим редактирования, поэтому можно безопасно выйти.
     if (this.#mode !== MODE.DEFAULT) {
-      this.#replaceFormToEvent(true); // Сбрасываем форму при resetView
+      this.#eventEditComponent.reset(this.#event); // Сбрасываем форму к исходным данным
+      replace(this.#eventComponent, this.#eventEditComponent); // Заменяем форму обратно на компонент точки
+      document.removeEventListener('keydown', this.#onEscKeydown); // Удаляем слушатель
+      this.#mode = MODE.DEFAULT;
     }
   }
 
+  setSaving = () => {
+    // Убедитесь, что isDisabled и isSaving применяются к компоненту формы
+    // а не к компоненту точки, когда форма открыта.
+    if (this.#mode === MODE.EDITING) {
+      this.#eventEditComponent.updateElement({
+        isDisabled: true,
+        isSaving: true
+      });
+    } else {
+      this.#eventComponent.updateElement({ // если это какой-то редкий случай, когда сохранение происходит не из формы
+        isDisabled: true,
+        isSaving: true
+      });
+    }
+  };
+
+  setDeleting = () => {
+    // При удалении, если форма открыта, эффект должен быть на форме
+    if (this.#mode === MODE.EDITING) {
+      this.#eventEditComponent.updateElement({
+        isDisabled: true,
+        isDeleting: true
+      });
+    } else {
+      this.#eventComponent.updateElement({
+        isDisabled: true,
+        isDeleting: true
+      });
+    }
+  };
+
   setAborting = () => {
     if (this.#mode === MODE.EDITING) {
-      // Использование колбэка для сброса состояния формы после анимации
       this.#eventEditComponent.shake(() => {
         this.#eventEditComponent.updateElement({
           isDisabled: false,
@@ -121,42 +164,61 @@ export default class EventPresenter {
 
   #handleDeleteClick = async (pointToDelete) => {
     try {
+      this.setDeleting(); // Используем новый setDeleting
       await this.#handleDataChange(ACTIONS.DELETE_POINT, UPDATE_TYPE.MINOR, pointToDelete);
     } catch (err) {
+      console.error('Delete failed:', err);
       this.setAborting();
     }
   };
 
-  // src/presenter/event-presenter.js
-
   #handleFormSubmit = async (updatedEvent) => {
+    // Validate the event data before processing
+    if (!this.#validateEventData(updatedEvent)) {
+      this.setAborting();
+      return;
+    }
+
     const isMinorUpdate =
-      this.#event.dateFrom.getTime() === updatedEvent.dateFrom.getTime() &&
-      this.#event.dateTo.getTime() === updatedEvent.dateTo.getTime() &&
+      this.#event.dateFrom?.getTime() === updatedEvent.dateFrom?.getTime() &&
+      this.#event.dateTo?.getTime() === updatedEvent.dateTo?.getTime() &&
       this.#event.price === updatedEvent.price &&
       this.#event.type === updatedEvent.type &&
       this.#event.destination === updatedEvent.destination &&
-      JSON.stringify(this.#event.offers.sort()) === JSON.stringify(updatedEvent.offers.sort());
+      JSON.stringify((this.#event.offers || []).sort()) === JSON.stringify((updatedEvent.offers || []).sort());
 
     const updateType = isMinorUpdate ? UPDATE_TYPE.PATCH : UPDATE_TYPE.MINOR;
 
     try {
+      this.setSaving(); // Используем новый setSaving
+
       await this.#handleDataChange(
         ACTIONS.UPDATE_POINT,
         updateType,
         updatedEvent
       );
-      // The form will be closed automatically when the board re-renders
-      // with the updated data. Do not call this.closeEditForm() here.
 
     } catch (err) {
-      // If the request fails, the form should remain open in an error state.
+      console.error('Save failed:', err);
       this.setAborting();
     }
   };
 
-  closeEditForm = () => {
-    this.#replaceFormToEvent();
+  #validateEventData = (event) => {
+    if (!event) return false;
+
+    // Check required fields
+    if (!event.type || !event.destination || event.price <= 0) return false;
+
+    // Check dates
+    if (!event.dateFrom || !event.dateTo) return false;
+    if (event.dateFrom >= event.dateTo) return false;
+
+    // Check if destination exists
+    const destinationExists = this.#destinations.some(dest => dest.id === event.destination);
+    if (!destinationExists && event.destination !== 'unknown') return false; // Изменил "unknown" на конкретный ID
+
+    return true;
   };
 
   #handleFavoriteClick = () => {
@@ -167,24 +229,9 @@ export default class EventPresenter {
   };
 
   #replaceEventToForm = () => {
-    this.#handleViewChange('edit', this.#event.id); // Уведомляем BoardPresenter
-    // Рендерим форму редактирования
+    this.#handleViewChange('edit', this.#event.id);
     replace(this.#eventEditComponent, this.#eventComponent);
     document.addEventListener('keydown', this.#onEscKeydown);
     this.#mode = MODE.EDITING;
-  };
-
-  #replaceFormToEvent = (shouldReset = false) => {
-    if (this.#mode === MODE.DEFAULT) {
-      return;
-    }
-
-    if (shouldReset) {
-      // Сбросить форму редактирования до исходных значений
-      this.#eventEditComponent.reset(this.#event);
-    }
-    replace(this.#eventComponent, this.#eventEditComponent);
-    document.removeEventListener('keydown', this.#onEscKeydown);
-    this.#mode = MODE.DEFAULT;
   };
 }

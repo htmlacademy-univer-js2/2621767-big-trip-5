@@ -37,13 +37,17 @@ export default class PointsListModel extends Observable {
       this.#destinations = destinations;
       this.#points = points.map(this.#adaptPoint);
 
+      // Уведомляем о успешной инициализации только здесь
       this._notify(UPDATE_TYPE.INIT);
     } catch (e) {
+      console.error('PointsListModel: Failed to initialize data:', e); // Добавляем логирование ошибки
       this.#points = [];
       this.#offersByType = {};
       this.#destinations = [];
-      this._notify(UPDATE_TYPE.INIT);
-      throw new Error('Failed to initialize PointsListModel');
+      // === ИЗМЕНЕНИЕ ЗДЕСЬ: НЕ ВЫЗЫВАЕМ this._notify(UPDATE_TYPE.INIT) при ошибке ===
+      // Вместо этого, просто перебрасываем ошибку дальше,
+      // чтобы BoardPresenter мог её поймать и обработать соответствующим образом.
+      throw e;
     }
   }
 
@@ -74,11 +78,16 @@ export default class PointsListModel extends Observable {
   };
 
   async addPoint(updateType, update) {
-    const newPointRaw = await this.#pointsApiService.addPoint(update);
-    const newPointAdapted = this.#adaptPoint(newPointRaw);
-    this.#points = [newPointAdapted, ...this.#points];
-    this._notify(updateType, newPointAdapted);
-    return newPointAdapted;
+    try { // Добавляем try...catch для надежности
+      const newPointRaw = await this.#pointsApiService.addPoint(update);
+      const newPointAdapted = this.#adaptPoint(newPointRaw);
+      this.#points = [newPointAdapted, ...this.#points];
+      this._notify(updateType, newPointAdapted);
+      return newPointAdapted;
+    } catch (err) {
+      console.error('PointsListModel: Error adding point:', err); // Логируем ошибку
+      throw err; // Перебрасываем ошибку дальше
+    }
   }
 
   async updatePoint(updateType, point) {
@@ -87,8 +96,10 @@ export default class PointsListModel extends Observable {
       const updatedPoint = this.#adaptPoint(updatedRaw);
       this.#points = updateItem(this.#points, updatedPoint);
       this._notify(updateType, updatedPoint);
+      return updatedPoint; // Добавляем возврат обновленной точки
     } catch (err) {
-      throw new Error('Error updating point');
+      console.error('PointsListModel: Error updating point:', err); // Логируем ошибку
+      throw err;
     }
   }
 
@@ -98,7 +109,8 @@ export default class PointsListModel extends Observable {
       this.#points = this.#points.filter((item) => item.id !== point.id);
       this._notify(updateType, point);
     } catch (err) {
-      throw new Error('Error deleting point');
+      console.error('PointsListModel: Error deleting point:', err); // Логируем ошибку
+      throw err;
     }
   }
 }

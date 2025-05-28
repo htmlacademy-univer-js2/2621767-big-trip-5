@@ -170,7 +170,7 @@ export default class FormEditing extends AbstractStatefulView {
 
   reset = (event) => this.updateElement({event});
 
-  #onSubmitButtonElementClick = (evt) => { // Removed 'async'
+  #onSubmitButtonElementClick = (evt) => {
     evt.preventDefault();
 
     if (this._state.isDisabled) {
@@ -184,14 +184,13 @@ export default class FormEditing extends AbstractStatefulView {
       return;
     }
 
-    // Update UI to "Saving..." and disable controls.
+    console.log('Sending point data:', pointToSave); // <--- ADD THIS LINE
+
     this.updateElement({
       isDisabled: true,
       isSaving: true,
     });
 
-    // The presenter now handles the success/failure logic.
-    // No await, no try-catch.
     this.#handleFormSubmit(pointToSave);
   };
 
@@ -256,28 +255,22 @@ export default class FormEditing extends AbstractStatefulView {
     this.#onRollButtonClick();
   };
 
-  #onDeleteButtonClick = async (event) => {
+  #onDeleteButtonClick = (event) => { // The method is no longer async
     event.preventDefault();
 
     if (this._state.isDisabled) {
       return;
     }
 
-    try {
-      this.updateElement({
-        isDisabled: true,
-        isDeleting: true,
-      });
+    // The view should not handle the try-catch logic.
+    // It just updates its state and notifies the presenter.
+    this.updateElement({
+      isDisabled: true,
+      isDeleting: true,
+    });
 
-      await this.#handleDeleteClick(this._state.event);
-
-    } catch (error) {
-      this.shake();
-      this.updateElement({
-        isDisabled: false,
-        isDeleting: false,
-      });
-    }
+    // Delegate the delete action to the presenter without 'await'
+    this.#handleDeleteClick(this._state.event);
   };
 
   #onDateEndCloseButton = ([date]) => {
