@@ -1,6 +1,6 @@
 import { ACTIONS, UPDATE_TYPE, FORM_TYPE, POINT } from '../const.js';
 import { remove, render, RenderPosition } from '../framework/render';
-import FormCreation from '../view/form-edit-view'; // Убедитесь, что FormCreation = FormEditing у вас
+import FormEditing from '../view/form-edit-view';
 import { isEscapeKey } from '../utils';
 
 export default class NewEventPresenter {
@@ -27,13 +27,14 @@ export default class NewEventPresenter {
 
     console.log('Creating FormCreation with destinations:', destinations.length, 'offers:', Object.keys(offers).length);
 
-    this.#pointNewComponent = new FormCreation({
-      event: { ...POINT }, // Используйте ваш пустой объект POINT
+    this.#pointNewComponent = new FormEditing({
+      event: { ...POINT },
       destinations: destinations,
       offers: offers,
-      onRollButtonClick: this.#handleReset, // Для стрелки и кнопки "Cancel"
+      onRollButtonClick: this.#handleReset, // This is for the rollup button in EDIT mode
       onSubmitButtonClick: this.#handleSubmit,
-      onDeleteClick: this.#handleReset, // Кнопка "Reset" в новой форме также отмена
+      onDeleteClick: this.#handleReset, // This is for the DELETE button in EDIT mode (though 'Reset' is used for CREATE)
+      onResetClick: this.#handleReset, // <--- ADD THIS LINE FOR THE CANCEL BUTTON IN CREATE MODE
       type: FORM_TYPE.CREATE,
     });
 
@@ -65,8 +66,10 @@ export default class NewEventPresenter {
   };
 
   #handleReset = () => {
+    console.log('Cancel clicked, destroying form.');
     this.destroy({ isCanceled: true });
   };
+
 
   // --- Ключевое изменение: handleSubmit больше не вызывает destroy() ---
   #handleSubmit = async (formData) => {
@@ -88,20 +91,18 @@ export default class NewEventPresenter {
 
   // --- destroy() теперь вызывается из BoardPresenter после обработки ответа API ---
   destroy = ({ isCanceled = true, newPoint } = {}) => {
-    console.log('NewEventPresenter: destroy called, isCanceled:', isCanceled);
-
     if (this.#pointNewComponent === null) {
-      console.log('NewEventPresenter: already destroyed');
       return;
     }
 
     remove(this.#pointNewComponent);
-    this.#pointNewComponent = null;
-
     document.removeEventListener('keydown', this.#onEscKeydown);
 
-    console.log('NewEventPresenter: calling onDestroy callback');
+    this.#pointNewComponent = null;
 
-    this.#onDestroy({ isCanceled, newPoint });
+    if (this.#onDestroy) {
+      this.#onDestroy({ isCanceled, newPoint });
+    }
   };
+
 }

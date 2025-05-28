@@ -107,7 +107,7 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                 </div>
 
                 <button class="event__save-btn btn btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>${savingMessage}</button>
-                <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
+                <button class="event__reset-btn" type="button" ${isDisabled ? 'disabled' : ''}>${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
                 ${formType === FORM_TYPE.EDIT ? `<button class="event__rollup-btn" type="button">
                     <span class="visually-hidden">Open event</span>
                 </button>` : ''}
@@ -163,6 +163,7 @@ export default class FormEditing extends AbstractStatefulView {
     this.#type = type;
     this._restoreHandlers();
   }
+
 
   get template() {
     return makeFormEditingTemplate(this._state, this.#destinations, this.#offers, this.#type);
@@ -369,7 +370,10 @@ export default class FormEditing extends AbstractStatefulView {
       this.element.querySelector('.event__reset-btn').addEventListener('click', this.#onDeleteButtonClick);
     }
     if (this.#type === FORM_TYPE.CREATE) {
-      this.element.querySelector('.event__reset-btn').addEventListener('click', this.#onResetClick);
+      this.element.querySelector('.event__reset-btn').addEventListener('click', (evt) => {
+        evt.preventDefault();
+        this.#onResetClick?.(); // это вызовет this.#handleReset в NewEventPresenter
+      });
     }
     this.element.querySelector('.event--edit').addEventListener('submit', this.#onSubmitButtonElementClick);
     this.element.querySelector('.event--edit').addEventListener('input', this.#formValidation);

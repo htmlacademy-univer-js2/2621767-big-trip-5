@@ -73,8 +73,7 @@ export default class BoardPresenter {
     } finally {
       this.#isLoading = false;
       remove(this.#loadingView); // Всегда удаляем загрузчик, даже при ошибке
-      if (this.points.length === 0 && !this.#isCreatingNewPoint && !this.#failedLoadingView.element) {
-        // Условие для рендера EmptyListView только если нет данных И НЕ загрузка И НЕ ошибка загрузки
+      if (this.points.length === 0) {
         this.#renderNoEvents();
       }
 
@@ -293,7 +292,7 @@ export default class BoardPresenter {
     }
 
     // Если нет событий И не создается новое событие И не идет загрузка И НЕ ошибка загрузки
-    if (!filteredPoints.length && !this.#isCreatingNewPoint && !this.#isLoading && !this.#failedLoadingView.element) {
+    if (filteredPoints.length === 0 && !this.#isCreatingNewPoint) {
       this.#renderNoEvents();
       return;
     }
