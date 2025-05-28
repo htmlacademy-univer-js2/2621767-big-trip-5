@@ -35,6 +35,7 @@ import TripInfoPresenter from './presenter/trip-info-presenter';
     container: tripInfoContainer,
     pointsModel: pointsListModel
   });
+
   filterPresenter.init();
   await boardPresenter.init();
   tripInfoPresenter.init();
