@@ -9,7 +9,7 @@ import TripInfoPresenter from './presenter/trip-info-presenter';
 
 (async () => {
   const eventsApiService = new EventsApiService(API_URL, AUTHORIZATION);
-  const pointsListModel = new PointsListModel({ pointsApiService: eventsApiService });
+  const pointsListModel = new PointsListModel({ pointApiService: eventsApiService });
 
   const buttonPointPresenter = new ButtonPointPresenter({
     container: document.querySelector('.trip-main')
@@ -19,25 +19,24 @@ import TripInfoPresenter from './presenter/trip-info-presenter';
 
   const boardPresenter = new BoardPresenter({
     eventsContainer: document.querySelector('.trip-events'),
-    filterModel,
-    pointsListModel,
-    buttonPointPresenter
+    filterModel: filterModel,
+    pointsModel: pointsListModel,
+    buttonPointPresenter: buttonPointPresenter,
   });
 
   const filterPresenter = new FilterPresenter({
     filterContainer: document.querySelector('.trip-controls__filters'),
-    filterModel,
-    pointsListModel
+    filterModel: filterModel,
+    pointsModel: pointsListModel
   });
-
-  filterPresenter.init();
-  await boardPresenter.init();
-  buttonPointPresenter.init({ onNewPointButtonClick: boardPresenter.onNewPointButtonClick });
 
   const tripInfoContainer = document.querySelector('.trip-main');
   const tripInfoPresenter = new TripInfoPresenter({
     container: tripInfoContainer,
     pointsModel: pointsListModel
   });
+  filterPresenter.init();
+  await boardPresenter.init();
   tripInfoPresenter.init();
+  buttonPointPresenter.init({ onNewPointButtonClick: boardPresenter.handleNewPointButtonClick });
 })();

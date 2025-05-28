@@ -1,39 +1,37 @@
-// src/presenter/button-point-presenter.js
 import { render } from '../framework/render';
-import ButtonPointView from '../view/button-point-view'; // Или NewPointButtonView
+import ButtonPointView from '../view/button-point-view';
 
 export default class ButtonPointPresenter {
   #container = null;
-  #button = null;
-  #clickAction = null;
+  #buttonComponent = null;
+  #newPointClickAction = null;
 
-  constructor({container}) {
+  constructor({ container }) {
     this.#container = container;
   }
 
-  init({onNewPointButtonClick}) {
-    this.#clickAction = onNewPointButtonClick;
+  init({ onNewPointButtonClick }) {
+    this.#newPointClickAction = onNewPointButtonClick;
 
-    // Важно: render вызывается ТОЛЬКО ЗДЕСЬ!
-    if (!this.#button) { // Проверяем, чтобы не рендерить дважды, хотя при правильном вызове это не нужно
-      this.#button = new ButtonPointView({onNewPointButtonClick: this.#onNewPointButtonClick});
-      render(this.#button, this.#container);
+    if (!this.#buttonComponent) {
+      this.#buttonComponent = new ButtonPointView({ onNewPointButtonClick: this.#handleNewPointButtonClick });
+      render(this.#buttonComponent, this.#container);
     }
   }
 
   enableButton() {
-    if (this.#button) { // Добавлена проверка, чтобы не было ошибки, если #button ещё null
-      this.#button.setDisabled(false);
+    if (this.#buttonComponent) {
+      this.#buttonComponent.setDisabled(false);
     }
   }
 
   disableButton() {
-    if (this.#button) { // Добавлена проверка
-      this.#button.setDisabled(true);
+    if (this.#buttonComponent) {
+      this.#buttonComponent.setDisabled(true);
     }
   }
 
-  #onNewPointButtonClick = () => {
-    this.#clickAction();
+  #handleNewPointButtonClick = () => {
+    this.#newPointClickAction();
   };
 }

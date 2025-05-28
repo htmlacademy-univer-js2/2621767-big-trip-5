@@ -5,11 +5,6 @@ function createEventsListTemplate() {
 }
 
 export default class EventsListView extends AbstractView {
-
-  constructor() {
-    super();
-  }
-
   get template() {
     return createEventsListTemplate();
   }

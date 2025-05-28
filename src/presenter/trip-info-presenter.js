@@ -4,7 +4,7 @@ import TripInfoView from '../view/trip-info-view.js';
 export default class TripInfoPresenter {
   #container = null;
   #pointsModel = null;
-  #tripInfoComponent = null; // Keep track of the rendered component
+  #tripInfoComponent = null;
 
   constructor({ container, pointsModel }) {
     this.#container = container;
@@ -14,34 +14,31 @@ export default class TripInfoPresenter {
   }
 
   init() {
-    const points = [...this.#pointsModel.points].sort((a, b) => new Date(a.dateFrom) - new Date(b.dateFrom));
+    const points = [...this.#pointsModel.points].sort((firstPoint, secondPoint) => new Date(firstPoint.dateFrom) - new Date(secondPoint.dateFrom));
 
-    // If there are no points, remove the existing component if it's rendered
     if (points.length === 0) {
-      if (this.#tripInfoComponent) { // Check if the component is currently rendered
-        remove(this.#tripInfoComponent); // Remove it from the DOM
-        this.#tripInfoComponent = null; // Clear the reference
+      if (this.#tripInfoComponent) {
+        remove(this.#tripInfoComponent);
+        this.#tripInfoComponent = null;
       }
-      return; // Stop further rendering
+      return;
     }
 
-    // If there are points, proceed to render/replace
-    const route = this.#getRoute(points);
-    const dateRange = this.#getDateRange(points);
-    const totalPrice = this.#getTotalPrice(points);
+    const tripRoute = this.#getTripRoute(points);
+    const tripDateRange = this.#getTripDateRange(points);
+    const tripTotalPrice = this.#getTripTotalPrice(points);
 
-    const prevComponent = this.#tripInfoComponent;
-    this.#tripInfoComponent = new TripInfoView({ route, dateRange, totalPrice });
+    const previousComponent = this.#tripInfoComponent;
+    this.#tripInfoComponent = new TripInfoView({
+      route: tripRoute,
+      dateRange: tripDateRange,
+      totalPrice: tripTotalPrice
+    });
 
-    if (!prevComponent) {
+    if (!previousComponent) {
       render(this.#tripInfoComponent, this.#container, 'afterbegin');
     } else {
-      replace(this.#tripInfoComponent, prevComponent);
-      // No need to remove(prevComponent) here, as replace already handles it
-      // if your framework's replace correctly removes the old element.
-      // If not, you might need to keep it, but usually 'replace' implies removal.
-      // Assuming 'replace' correctly replaces the old element:
-      // remove(prevComponent); // This line is often redundant if replace works as expected.
+      replace(this.#tripInfoComponent, previousComponent);
     }
   }
 
@@ -49,40 +46,37 @@ export default class TripInfoPresenter {
     this.init();
   };
 
-  #getRoute(points) {
+  #getTripRoute(points) {
     const destinations = this.#pointsModel.destinations;
 
     const cities = points.map((point) => {
-      const dest = destinations.find((d) => d.id === point.destination);
-      return dest ? dest.name : 'Unknown';
+      const destination = destinations.find((dest) => dest.id === point.destination);
+      return destination ? destination.name : 'Unknown';
     });
 
     if (cities.length <= 3) {
       return cities.join(' — ');
     }
 
-    // Ensure this correctly handles the "..." case for more than 3 cities
     return `${cities[0]} — ... — ${cities[cities.length - 1]}`;
   }
 
-  #getDateRange(points) {
-    const start = new Date(points[0].dateFrom);
-    const end = new Date(points[points.length - 1].dateTo);
+  #getTripDateRange(points) {
+    const startDate = new Date(points[0].dateFrom);
+    const endDate = new Date(points[points.length - 1].dateTo);
 
-    // Format dates to 'DD MMM'
     const formatMonth = (date) => date.toLocaleString('en', { month: 'short' });
-    const startDate = `${start.getDate()} ${formatMonth(start)}`;
-    const endDate = `${end.getDate()} ${formatMonth(end)}`;
+    const formattedStartDate = `${startDate.getDate()} ${formatMonth(startDate)}`;
+    const formattedEndDate = `${endDate.getDate()} ${formatMonth(endDate)}`;
 
-    // Handle single-day trips where start and end date might be the same month
-    if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
-      return `${startDate} — ${end.getDate()} ${formatMonth(end)}`;
+    if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
+      return `${formattedStartDate} — ${endDate.getDate()} ${formatMonth(endDate)}`;
     }
 
-    return `${startDate} — ${endDate}`;
+    return `${formattedStartDate} — ${formattedEndDate}`;
   }
 
-  #getTotalPrice(points) {
+  #getTripTotalPrice(points) {
     const offersByType = this.#pointsModel.offers;
 
     return points.reduce((total, point) => {

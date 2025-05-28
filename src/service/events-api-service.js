@@ -1,6 +1,5 @@
-import {METHOD} from '../const.js';
+import { METHOD_TYPE } from '../const.js';
 import ApiService from '../framework/api-service';
-
 
 export default class EventsApiService extends ApiService {
   constructor(endPoint, authorization) {
@@ -23,56 +22,38 @@ export default class EventsApiService extends ApiService {
   }
 
   async addPoint(point) {
-    const adaptedData = EventsApiService.adaptPointToServer(point);
+    const adaptedPoint = EventsApiService.adaptPointToServer(point);
 
-    try { // <-- Добавляем try...catch
-      const response = await this._load({
-        url: 'points',
-        method: METHOD.POST,
-        body: JSON.stringify(adaptedData),
-        headers: new Headers({ 'Content-Type': 'application/json' }),
-      });
+    const response = await this._load({
+      url: 'points',
+      method: METHOD_TYPE.POST,
+      body: JSON.stringify(adaptedPoint),
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+    });
 
-      const parsed = await EventsApiService.parseResponse(response);
-      return EventsApiService.adaptPointToClient(parsed);
-    } catch (error) {
-      throw error; // <-- Перебрасываем ошибку!
-    }
+    const parsedResponse = await ApiService.parseResponse(response);
+    return EventsApiService.adaptPointToClient(parsedResponse);
   }
 
   async deletePoint(point) {
-    try { // <-- Добавляем try...catch
-      const response = await this._load({
-        url: `points/${point.id}`,
-        method: METHOD.DELETE,
-      });
-
-      // Здесь не нужна дополнительная проверка response.ok, так как _load уже это сделал
-      // и выбросил бы ошибку, если response.ok было false.
-      return response; // Возвращаем response (обычно для DELETE не нужен парсинг ответа)
-    } catch (error) {
-      // Перебрасываем ошибку, чтобы презентер мог её поймать
-      throw error; // <-- Перебрасываем ошибку!
-    }
+    const response = await this._load({
+      url: `points/${point.id}`,
+      method: METHOD_TYPE.DELETE,
+    });
+    return response;
   }
 
   async updatePoint(point) {
-    const adaptedData = EventsApiService.adaptPointToServer(point);
+    const adaptedPoint = EventsApiService.adaptPointToServer(point);
+    const response = await this._load({
+      url: `points/${point.id}`,
+      method: METHOD_TYPE.PUT,
+      body: JSON.stringify(adaptedPoint),
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+    });
+    const parsedResponse = await ApiService.parseResponse(response);
 
-    try { // <-- Добавляем try...catch
-      const response = await this._load({
-        url: `points/${point.id}`,
-        method: METHOD.PUT,
-        body: JSON.stringify(adaptedData),
-        headers: new Headers({ 'Content-Type': 'application/json' }),
-      });
-      const parsed = await ApiService.parseResponse(response);
-
-      return EventsApiService.adaptPointToClient(parsed);
-    } catch (error) {
-      // Перебрасываем ошибку, чтобы презентер мог её поймать
-      throw error; // <-- Перебрасываем ошибку!
-    }
+    return EventsApiService.adaptPointToClient(parsedResponse);
   }
 
   static adaptPointToClient(data) {

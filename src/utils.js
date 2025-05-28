@@ -4,26 +4,11 @@ import { FILTER_TYPE } from './const.js';
 
 dayjs.extend(duration);
 
+
 const DATE_FORMAT = 'MMM D';
-const FORM_DATE_FORMAT = 'DD/MM/YY';
+const FORM_DATE_FORMAT = 'DD/MM/YY HH:mm';
 const TIME_FORMAT = 'HH:mm';
 
-const getRandomArrayElement = (min, max) => {
-  if (min === undefined || max === undefined) {
-    throw new Error('Both min and max must be provided');
-  }
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-const getRandomElementsOfArray = (array, count) => {
-  if (!Array.isArray(array) || array.length === 0) {
-    return [];
-  }
-
-  const actualCount = count ?? getRandomArrayElement(1, array.length);
-  const shuffled = [...array].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, actualCount);
-};
 
 function formatEventTime(date) {
   return date ? dayjs(date).format(TIME_FORMAT) : '';
@@ -33,25 +18,8 @@ function formatEventDate(date) {
   return date ? dayjs(date).format(DATE_FORMAT) : '';
 }
 
-function formatFormEventDate(date) {
+function getFullDate(date) {
   return date ? dayjs(date).format(FORM_DATE_FORMAT) : '';
-}
-
-function getDestinationById(event, destinations) {
-  return destinations.find((destination) => destination.id === event.destination);
-}
-
-function getDestinationByCity(city, destinations) {
-  return destinations.find((destination) => destination.city === city);
-}
-
-function getOffersByType(type, offersByType) {
-  return offersByType[type] || [];
-}
-
-
-function getOffersById(id, offers) {
-  return offers.find((offer) => offer.id === id);
 }
 
 function formatEventDuration(startDate, endDate) {
@@ -60,11 +28,11 @@ function formatEventDuration(startDate, endDate) {
   }
 
   const diffInMs = dayjs(endDate).diff(dayjs(startDate));
+  const durationObject = dayjs.duration(diffInMs);
 
-  const totalMinutes = Math.floor(diffInMs / (1000 * 60));
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
+  const days = Math.floor(durationObject.asDays());
+  const hours = durationObject.hours();
+  const minutes = durationObject.minutes();
 
   let result = '';
 
@@ -81,16 +49,18 @@ function formatEventDuration(startDate, endDate) {
   return result.trim();
 }
 
-
-function isEscapeKey(evt) {
-  return evt.key === 'Escape';
+function getOffersByType(type, offersByType) {
+  return offersByType[type] || [];
 }
 
-const isPastEvent = (date) => dayjs(date).isBefore(dayjs());
+const isEscapeKey = (evt) => evt.key === 'Escape';
+
+const isPastEvent = (dateTo) => dayjs(dateTo).isBefore(dayjs());
 
 const isPresentEvent = (dateFrom, dateTo) => dayjs(dateFrom).isBefore(dayjs()) && dayjs(dateTo).isAfter(dayjs());
 
-const isFutureEvent = (date) => dayjs(date).isAfter(dayjs());
+const isFutureEvent = (dateFrom) => dayjs(dateFrom).isAfter(dayjs());
+
 
 function updateItem(items, update) {
   return items.map((item) => item.id === update.id ? update : item);
@@ -98,49 +68,28 @@ function updateItem(items, update) {
 
 const sortByDay = (pointA, pointB) => dayjs(pointA.dateFrom).diff(dayjs(pointB.dateFrom));
 
-const sortByTime = (pointA, pointB) => dayjs(pointB.dateTo).diff(pointB.dateFrom) - dayjs(pointA.dateTo).diff(pointA.dateFrom);
+const sortByTime = (pointA, pointB) => {
+  const durationA = dayjs(pointA.dateTo).diff(pointA.dateFrom);
+  const durationB = dayjs(pointB.dateTo).diff(pointB.dateFrom);
+  return durationB - durationA;
+};
 
 const sortByPrice = (pointA, pointB) => pointB.price - pointA.price;
 
-const getFullDate = (date) => dayjs(date).format('DD/MM/YY HH:mm');
-
-const isSameDate = (date1, date2) => dayjs(date1).isSame(date2, 'd');
-
-const filter = {
+const filterPoints = {
   [FILTER_TYPE.EVERYTHING]: (points) => points,
   [FILTER_TYPE.FUTURE]: (points) => points.filter((point) => isFutureEvent(point.dateFrom)),
   [FILTER_TYPE.PRESENT]: (points) => points.filter((point) => isPresentEvent(point.dateFrom, point.dateTo)),
   [FILTER_TYPE.PAST]: (points) => points.filter((point) => isPastEvent(point.dateTo))
 };
 
-const getRandomDates = () => {
-  const dateFrom = new Date();
-  dateFrom.setDate(dateFrom.getDate() + Math.floor(Math.random() * 11) - 5);
-  dateFrom.setHours(Math.floor(Math.random() * 24));
-  dateFrom.setMinutes(Math.floor(Math.random() * 12) * 5);
-  dateFrom.setSeconds(0);
-  dateFrom.setMilliseconds(0);
-
-  const dateTo = new Date(dateFrom);
-  const durationInMs = Math.floor(
-    Math.random() * (5 * 24 * 60 * 60 * 1000 - 30 * 60 * 1000) + 30 * 60 * 1000
-  );
-  dateTo.setTime(dateFrom.getTime() + durationInMs);
-
-  return [dateFrom, dateTo];
-};
 
 export {
-  getRandomArrayElement,
-  getRandomElementsOfArray,
   formatEventDate,
   formatEventTime,
-  getDestinationById,
-  getOffersByType,
-  getOffersById,
-  getDestinationByCity,
+  getFullDate,
   formatEventDuration,
-  formatFormEventDate,
+  getOffersByType,
   isEscapeKey,
   isFutureEvent,
   isPastEvent,
@@ -149,8 +98,5 @@ export {
   sortByDay,
   sortByTime,
   sortByPrice,
-  isSameDate,
-  filter,
-  getRandomDates,
-  getFullDate
+  filterPoints
 };
