@@ -1,32 +1,34 @@
-import {ACTIONS, UPDATE_TYPE, FORM_TYPE, POINT} from '../const.js';
+import { ACTION_TYPE, UPDATE_TYPE, FORM_TYPE, BLANK_POINT } from '../const';
 import { remove, render, RenderPosition } from '../framework/render';
-import FormEditing from '../view/form-edit-view.js';
+import FormEditing from '../view/form-edit-view';
+import { isEscapeKey } from '../utils';
 
 export default class NewEventPresenter {
   #listComponent = null;
   #pointNewComponent = null;
-  #pointsListModel = null;
+  #pointsModel = null;
   #onDataChange = null;
   #onDestroy = null;
 
-  constructor({listComponent, pointsListModel: pointsListModel, onDataChange, onDestroy}) {
+  constructor({ listComponent, pointsModel, onDataChange, onDestroy }) {
     this.#listComponent = listComponent;
-    this.#pointsListModel = pointsListModel;
+    this.#pointsModel = pointsModel;
     this.#onDataChange = onDataChange;
     this.#onDestroy = onDestroy;
   }
 
-  init() {
+  init(destinations, offers) {
     if (this.#pointNewComponent) {
       return;
     }
 
     this.#pointNewComponent = new FormEditing({
-      event: { ...POINT},
-      destinations: this.#pointsListModel.destinations,
-      offers: this.#pointsListModel.offers,
+      event: { ...BLANK_POINT },
+      destinations: destinations,
+      offers: offers,
       onRollButtonClick: this.#handleReset,
       onSubmitButtonClick: this.#handleSubmit,
+      onDeleteClick: this.#handleReset,
       onResetClick: this.#handleReset,
       type: FORM_TYPE.CREATE,
     });
@@ -37,56 +39,48 @@ export default class NewEventPresenter {
 
   setAborting = () => {
     if (this.#pointNewComponent) {
-      this.#pointNewComponent.updateElement({
-        isDisabled: false,
-        isSaving: false,
-        isDeleting: false,
-      });
+      this.#pointNewComponent.shake(() => {
+        this.#pointNewComponent.updateElement({
+          isDisabled: false,
+          isSaving: false,
+          isDeleting: false,
+        });
+      }, '.event--edit');
     }
   };
 
   #onEscKeydown = (event) => {
-    if (event.key === 'Escape') {
+    if (isEscapeKey(event)) {
       event.preventDefault();
-      this.destroy();
+      this.destroy({ isCanceled: true });
     }
   };
 
   #handleReset = () => {
-    this.destroy();
+    this.destroy({ isCanceled: true });
   };
 
-  setSavingState = (isSaving) => {
-    if (this.#pointNewComponent) {
-      this.#pointNewComponent.updateElement({
-        isDisabled: isSaving,
-        isSaving: isSaving
-      });
-    }
+  #handleSubmit = async (formData) => {
+    this.#pointNewComponent.updateElement({
+      isDisabled: true,
+      isSaving: true,
+    });
+
+    this.#onDataChange(ACTION_TYPE.ADD_POINT, UPDATE_TYPE.MINOR, formData);
   };
 
-  #handleSubmit = async (point) => {
-    try {
-      this.setSavingState(true);
-
-      await this.#onDataChange(ACTIONS.ADD_POINT, UPDATE_TYPE.MINOR, point);
-
-    } catch (error) {
-      this.#pointNewComponent.shake();
-      this.setSavingState(false);
-      this.#pointNewComponent.showError('Не удалось сохранить. Попробуйте ещё раз.');
-    }
-  };
-
-  destroy = ({isCanceled = true, newPoint} = {}) => {
+  destroy = ({ isCanceled = true, newPoint } = {}) => {
     if (this.#pointNewComponent === null) {
       return;
     }
 
     remove(this.#pointNewComponent);
-    this.#pointNewComponent = null;
     document.removeEventListener('keydown', this.#onEscKeydown);
 
-    this.#onDestroy({isCanceled, newPoint});
+    this.#pointNewComponent = null;
+
+    if (this.#onDestroy) {
+      this.#onDestroy({ isCanceled, newPoint });
+    }
   };
 }

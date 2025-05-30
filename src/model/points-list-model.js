@@ -1,16 +1,16 @@
 import Observable from '../framework/observable.js';
-import { updateItem } from '../utils';
-import { UPDATE_TYPE } from '../const.js';
+import {updateItem} from '../utils';
+import {UPDATE_TYPE} from '../const.js';
 
-export default class PointsListModel extends Observable {
-  #pointsApiService = null;
+export default class PointModel extends Observable {
+  #pointApiService = null;
   #points = [];
   #offersByType = {};
   #destinations = [];
 
-  constructor({ pointsApiService }) {
+  constructor({ pointApiService }) {
     super();
-    this.#pointsApiService = pointsApiService;
+    this.#pointApiService = pointApiService;
   }
 
   get points() {
@@ -28,53 +28,51 @@ export default class PointsListModel extends Observable {
   async init() {
     try {
       const [points, offers, destinations] = await Promise.all([
-        this.#pointsApiService.getPoints(),
-        this.#pointsApiService.getOffers(),
-        this.#pointsApiService.getDestinations(),
+        this.#pointApiService.getPoints(),
+        this.#pointApiService.getOffers(),
+        this.#pointApiService.getDestinations(),
       ]);
 
       this.#offersByType = this.#transformOffers(offers);
       this.#destinations = destinations;
       this.#points = points.map(this.#adaptPoint);
-
       this._notify(UPDATE_TYPE.INIT);
-    } catch (e) {
+    } catch (error) {
       this.#points = [];
       this.#offersByType = {};
       this.#destinations = [];
-      this._notify(UPDATE_TYPE.INIT);
-      throw new Error('Failed to initialize PointsListModel');
+      throw error;
     }
   }
 
   #transformOffers(rawOffers) {
-    return rawOffers.reduce((acc, group) => {
-      acc[group.type] = group.offers;
-      return acc;
+    if (!Array.isArray(rawOffers)) {
+      return {};
+    }
+    return rawOffers.reduce((accumulator, group) => {
+      accumulator[group.type] = group.offers;
+      return accumulator;
     }, {});
   }
 
   #adaptPoint = (point) => {
-    const adapted = {
+    const adaptedPoint = {
       ...point,
       price: point['base_price'],
       dateFrom: new Date(point['date_from']),
       dateTo: new Date(point['date_to']),
       isFavorite: point['is_favorite'],
-      // destination remains an ID
-      // offers remain an array of IDs
     };
 
-    delete adapted['base_price'];
-    delete adapted['date_from'];
-    delete adapted['date_to'];
-    delete adapted['is_favorite'];
-
-    return adapted;
+    delete adaptedPoint['base_price'];
+    delete adaptedPoint['date_from'];
+    delete adaptedPoint['date_to'];
+    delete adaptedPoint['is_favorite'];
+    return adaptedPoint;
   };
 
   async addPoint(updateType, update) {
-    const newPointRaw = await this.#pointsApiService.addPoint(update);
+    const newPointRaw = await this.#pointApiService.addPoint(update);
     const newPointAdapted = this.#adaptPoint(newPointRaw);
     this.#points = [newPointAdapted, ...this.#points];
     this._notify(updateType, newPointAdapted);
@@ -82,23 +80,16 @@ export default class PointsListModel extends Observable {
   }
 
   async updatePoint(updateType, point) {
-    try {
-      const updatedRaw = await this.#pointsApiService.updatePoint(point);
-      const updatedPoint = this.#adaptPoint(updatedRaw);
-      this.#points = updateItem(this.#points, updatedPoint);
-      this._notify(updateType, updatedPoint);
-    } catch (err) {
-      throw new Error('Error updating point');
-    }
+    const updatedRaw = await this.#pointApiService.updatePoint(point);
+    const updatedPoint = this.#adaptPoint(updatedRaw);
+    this.#points = updateItem(this.#points, updatedPoint);
+    this._notify(updateType, updatedPoint);
+    return updatedPoint;
   }
 
   async deletePoint(updateType, point) {
-    try {
-      await this.#pointsApiService.deletePoint(point);
-      this.#points = this.#points.filter((item) => item.id !== point.id);
-      this._notify(updateType, point);
-    } catch (err) {
-      throw new Error('Error deleting point');
-    }
+    await this.#pointApiService.deletePoint(point);
+    this.#points = this.#points.filter((item) => item.id !== point.id);
+    this._notify(updateType, point);
   }
 }

@@ -14,24 +14,31 @@ export default class TripInfoPresenter {
   }
 
   init() {
-    const points = [...this.#pointsModel.points].sort((a, b) => new Date(a.dateFrom) - new Date(b.dateFrom));
+    const points = [...this.#pointsModel.points].sort((firstPoint, secondPoint) => new Date(firstPoint.dateFrom) - new Date(secondPoint.dateFrom));
 
     if (points.length === 0) {
+      if (this.#tripInfoComponent) {
+        remove(this.#tripInfoComponent);
+        this.#tripInfoComponent = null;
+      }
       return;
     }
 
-    const route = this.#getRoute(points);
-    const dateRange = this.#getDateRange(points);
-    const totalPrice = this.#getTotalPrice(points);
+    const tripRoute = this.#getTripRoute(points);
+    const tripDateRange = this.#getTripDateRange(points);
+    const tripTotalPrice = this.#getTripTotalPrice(points);
 
-    const prevComponent = this.#tripInfoComponent;
-    this.#tripInfoComponent = new TripInfoView({ route, dateRange, totalPrice });
+    const previousComponent = this.#tripInfoComponent;
+    this.#tripInfoComponent = new TripInfoView({
+      route: tripRoute,
+      dateRange: tripDateRange,
+      totalPrice: tripTotalPrice
+    });
 
-    if (!prevComponent) {
+    if (!previousComponent) {
       render(this.#tripInfoComponent, this.#container, 'afterbegin');
     } else {
-      replace(this.#tripInfoComponent, prevComponent);
-      remove(prevComponent);
+      replace(this.#tripInfoComponent, previousComponent);
     }
   }
 
@@ -39,12 +46,12 @@ export default class TripInfoPresenter {
     this.init();
   };
 
-  #getRoute(points) {
+  #getTripRoute(points) {
     const destinations = this.#pointsModel.destinations;
 
     const cities = points.map((point) => {
-      const dest = destinations.find((d) => d.id === point.destination);
-      return dest ? dest.name : 'Unknown';
+      const destination = destinations.find((dest) => dest.id === point.destination);
+      return destination ? destination.name : 'Unknown';
     });
 
     if (cities.length <= 3) {
@@ -54,14 +61,22 @@ export default class TripInfoPresenter {
     return `${cities[0]} — ... — ${cities[cities.length - 1]}`;
   }
 
-  #getDateRange(points) {
-    const start = new Date(points[0].dateFrom);
-    const end = new Date(points[points.length - 1].dateTo);
+  #getTripDateRange(points) {
+    const startDate = new Date(points[0].dateFrom);
+    const endDate = new Date(points[points.length - 1].dateTo);
 
-    return `${start.getDate()} ${start.toLocaleString('en', { month: 'short' })} — ${end.getDate()} ${end.toLocaleString('en', { month: 'short' })}`;
+    const formatMonth = (date) => date.toLocaleString('en', { month: 'short' });
+    const formattedStartDate = `${startDate.getDate()} ${formatMonth(startDate)}`;
+    const formattedEndDate = `${endDate.getDate()} ${formatMonth(endDate)}`;
+
+    if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
+      return `${formattedStartDate} — ${endDate.getDate()} ${formatMonth(endDate)}`;
+    }
+
+    return `${formattedStartDate} — ${formattedEndDate}`;
   }
 
-  #getTotalPrice(points) {
+  #getTripTotalPrice(points) {
     const offersByType = this.#pointsModel.offers;
 
     return points.reduce((total, point) => {

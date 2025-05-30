@@ -1,6 +1,5 @@
-import {METHOD} from '../const.js';
+import { METHOD_TYPE } from '../const.js';
 import ApiService from '../framework/api-service';
-
 
 export default class EventsApiService extends ApiService {
   constructor(endPoint, authorization) {
@@ -8,58 +7,53 @@ export default class EventsApiService extends ApiService {
   }
 
   async getPoints() {
-    const response = await this._load({ url: 'points', method: METHOD.GET });
-    const rawPoints = await EventsApiService.parseResponse(response);
-    return rawPoints.map(EventsApiService.adaptPointToClient);
+    return this._load({ url: 'points' })
+      .then(ApiService.parseResponse);
   }
 
   async getDestinations() {
-    const response = await this._load({ url: 'destinations', method: METHOD.GET });
-    return await EventsApiService.parseResponse(response);
+    return this._load({ url: 'destinations' })
+      .then(ApiService.parseResponse);
   }
 
   async getOffers() {
-    const response = await this._load({ url: 'offers', method: METHOD.GET });
-    return await EventsApiService.parseResponse(response);
+    return this._load({ url: 'offers' })
+      .then(ApiService.parseResponse);
   }
 
   async addPoint(point) {
-    const adaptedData = EventsApiService.adaptPointToServer(point);
+    const adaptedPoint = EventsApiService.adaptPointToServer(point);
 
     const response = await this._load({
       url: 'points',
-      method: METHOD.POST,
-      body: JSON.stringify(adaptedData),
+      method: METHOD_TYPE.POST,
+      body: JSON.stringify(adaptedPoint),
       headers: new Headers({ 'Content-Type': 'application/json' }),
     });
 
-    const parsed = await EventsApiService.parseResponse(response);
-    return EventsApiService.adaptPointToClient(parsed);
+    const parsedResponse = await ApiService.parseResponse(response);
+    return EventsApiService.adaptPointToClient(parsedResponse);
   }
 
   async deletePoint(point) {
     const response = await this._load({
       url: `points/${point.id}`,
-      method: METHOD.DELETE,
+      method: METHOD_TYPE.DELETE,
     });
-
     return response;
   }
 
   async updatePoint(point) {
-
-    const adaptedData = EventsApiService.adaptPointToServer(point);
-
+    const adaptedPoint = EventsApiService.adaptPointToServer(point);
     const response = await this._load({
       url: `points/${point.id}`,
-      method: METHOD.PUT,
-      body: JSON.stringify(adaptedData),
+      method: METHOD_TYPE.PUT,
+      body: JSON.stringify(adaptedPoint),
       headers: new Headers({ 'Content-Type': 'application/json' }),
     });
+    const parsedResponse = await ApiService.parseResponse(response);
 
-    const parsed = await EventsApiService.parseResponse(response);
-
-    return EventsApiService.adaptPointToClient(parsed);
+    return EventsApiService.adaptPointToClient(parsedResponse);
   }
 
   static adaptPointToClient(data) {
@@ -71,8 +65,8 @@ export default class EventsApiService extends ApiService {
       'id': point.id,
       'type': point.type,
       'destination': point.destination,
-      'date_from': point.dateFrom,
-      'date_to': point.dateTo,
+      'date_from': point.dateFrom instanceof Date ? point.dateFrom.toISOString() : point.dateFrom,
+      'date_to': point.dateTo instanceof Date ? point.dateTo.toISOString() : point.dateTo,
       'base_price': point.price,
       'is_favorite': point.isFavorite,
       'offers': point.offers,

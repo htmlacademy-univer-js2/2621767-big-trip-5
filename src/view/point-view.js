@@ -18,11 +18,11 @@ function createPointRouteTemplate(event, destinations, allOffers) {
     event.offers.some((id) => id === offer.id)
   );
 
-  function validateEventType(objecttype) {
+  function validateEventType(objectType) {
     const validTypes = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
     const defaultType = 'flight';
 
-    const normalizedType = String(objecttype).toLowerCase();
+    const normalizedType = String(objectType).toLowerCase();
     return validTypes.includes(normalizedType) ? normalizedType : defaultType;
   }
 
@@ -56,9 +56,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
         <p class="event__price">
           &euro;&nbsp;<span class="event__price-value">${price}</span>
         </p>
-        <section class="event__section event__section--offers">
-          <h4 class="visually-hidden">Offers:</h4>
-          <ul class="event__selected-offers">
+        <ul class="event__selected-offers">
             ${selectedOffers.map((offer) => `
               <li class="event__offer">
                 <span class="event__offer-title">${offer.title}</span>
@@ -66,8 +64,7 @@ function createPointRouteTemplate(event, destinations, allOffers) {
                 <span class="event__offer-price">${offer.price}</span>
               </li>
             `).join('')}
-          </ul>
-        </section>
+        </ul>
         <button class="event__favorite-btn ${favoriteClass}" type="button">
           <span class="visually-hidden">Add to favorite</span>
           <svg class="event__favorite-icon" width="28" height="28" viewBox="0 0 28 28">
@@ -81,37 +78,36 @@ function createPointRouteTemplate(event, destinations, allOffers) {
     </li>`;
 }
 
-
-export default class Point extends AbstractView {
+export default class PointView extends AbstractView {
   #event = null;
   #destinations = null;
   #offers = null;
-  #handleEditClick = null;
-  #handleFavoriteClick = null;
+  #onEditClick = null;
+  #onFavoriteClick = null;
 
-  constructor({event, destinations, offers, onEditClick, onFavoriteClick}) {
+  constructor({ event, destinations, offers, onEditClick, onFavoriteClick }) {
     super();
     this.#event = event;
     this.#destinations = destinations;
     this.#offers = offers;
-    this.#handleEditClick = onEditClick;
-    this.#handleFavoriteClick = onFavoriteClick;
+    this.#onEditClick = onEditClick;
+    this.#onFavoriteClick = onFavoriteClick;
 
-    this.element.querySelector('.event__rollup-btn')?.addEventListener('click', this.#editClickHandler);
-    this.element.querySelector('.event__favorite-btn')?.addEventListener('click', this.#favoriteClickHandler);
+    this.element.querySelector('.event__rollup-btn')?.addEventListener('click', this.#handleEditClick);
+    this.element.querySelector('.event__favorite-btn')?.addEventListener('click', this.#handleFavoriteClick);
   }
 
   get template() {
     return createPointRouteTemplate(this.#event, this.#destinations, this.#offers);
   }
 
-  #editClickHandler = (evt) => {
+  #handleEditClick = (evt) => {
     evt.preventDefault();
-    this.#handleEditClick();
+    this.#onEditClick();
   };
 
-  #favoriteClickHandler = (evt) => {
+  #handleFavoriteClick = (evt) => {
     evt.preventDefault();
-    this.#handleFavoriteClick();
+    this.#onFavoriteClick();
   };
 }

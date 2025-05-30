@@ -3,29 +3,35 @@ import ButtonPointView from '../view/button-point-view';
 
 export default class ButtonPointPresenter {
   #container = null;
-  #button = null;
-  #clickAction = null;
+  #buttonComponent = null;
+  #newPointClickAction = null;
 
-  constructor({container}) {
+  constructor({ container }) {
     this.#container = container;
   }
 
-  init({onNewPointButtonClick}) {
-    this.#clickAction = onNewPointButtonClick;
+  init({ onNewPointButtonClick }) {
+    this.#newPointClickAction = onNewPointButtonClick;
 
-    this.#button = new ButtonPointView({onNewPointButtonClick: this.#onNewPointButtonClick});
-    render(this.#button, this.#container);
+    if (!this.#buttonComponent) {
+      this.#buttonComponent = new ButtonPointView({ onNewPointButtonClick: this.#handleNewPointButtonClick });
+      render(this.#buttonComponent, this.#container);
+    }
   }
 
   enableButton() {
-    this.#button.setDisabled(false);
+    if (this.#buttonComponent) {
+      this.#buttonComponent.setDisabled(false);
+    }
   }
 
   disableButton() {
-    this.#button.setDisabled(true);
+    if (this.#buttonComponent) {
+      this.#buttonComponent.setDisabled(true);
+    }
   }
 
-  #onNewPointButtonClick = () => {
-    this.#clickAction();
+  #handleNewPointButtonClick = () => {
+    this.#newPointClickAction();
   };
 }

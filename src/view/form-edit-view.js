@@ -1,10 +1,10 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view';
-import {getFullDate, getOffersByType} from '../utils';
-import {EVENT_TYPE, FORM_TYPE, POINT} from '../const';
+import { getFullDate, getOffersByType } from '../utils';
+import { EVENT_TYPE, FORM_TYPE, BLANK_POINT } from '../const';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 
-const FLATPICKR_CONFIG = {
+const FLAT_PICKER_CONFIG = {
   dateFormat: 'd/m/y H:i',
   enableTime: true,
   locale: {
@@ -14,7 +14,7 @@ const FLATPICKR_CONFIG = {
 };
 
 function createOfferTemplate(offer, pointOffers) {
-  const {id, title, price} = offer;
+  const { id, title, price } = offer;
   const isOptionChecked = pointOffers.map(String).includes(String(id));
 
   return `<div class="event__offer-selector">
@@ -27,9 +27,9 @@ function createOfferTemplate(offer, pointOffers) {
            </div>`;
 }
 
-function makeFormEditingTemplate(state, destinations = [], allOffers = [], formType = []) {
-  const {id, type, destination, dateFrom, dateTo, price, offers} = state.event;
-  const {isDisabled, isSaving, isDeleting} = state;
+function createFormEditingTemplate(state, destinations = [], allOffers = [], formType = []) {
+  const { id, type, destination, dateFrom, dateTo, price, offers } = state.event;
+  const { isDisabled, isSaving, isDeleting } = state;
 
   let pointDestination = destinations.find((dest) => dest?.id === destination);
 
@@ -45,9 +45,12 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
   const fullStartDate = dateFrom ? getFullDate(dateFrom) : '';
   const fullEndDate = dateTo ? getFullDate(dateTo) : '';
   const availableOffers = getOffersByType(type, allOffers);
-  const pointTypeIsChecked = (eventType) => eventType === type ? 'checked' : '';
+  const pointTypeIsChecked = (eventTypeItem) => eventTypeItem === type ? 'checked' : '';
   const deleteMessage = isDeleting ? 'Deleting...' : 'Delete';
   const savingMessage = isSaving ? 'Saving...' : 'Save';
+
+  const hasDestinationInfo = pointDestination?.description || pointDestination?.pictures?.length > 0;
+  const hasPhotos = pointDestination?.pictures?.length > 0;
 
   return `<li class="trip-events__item">
             <form class="event event--edit" action="#" method="post">
@@ -62,26 +65,29 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                   <div class="event__type-list">
                     <fieldset class="event__type-group">
                       <legend class="visually-hidden">Event type</legend>
-                      ${EVENT_TYPE.map((eventType) => `<div class="event__type-item">
-                        <input id="event-type-${eventType}-1" class="event__${eventType}-input  visually-hidden" type="radio" name="event-type" value="${eventType}" ${pointTypeIsChecked(eventType)}>
-                        <label class="event__type-label  event__type-label--${eventType}" for="event-type-${eventType}-1">${eventType}</label>
+                      ${EVENT_TYPE.map((eventTypeItem) => `<div class="event__type-item">
+                        <input id="event-type-${eventTypeItem}-1" class="event__${eventTypeItem}-input  visually-hidden" type="radio" name="event-type" value="${eventTypeItem}" ${pointTypeIsChecked(eventTypeItem)}>
+                        <label class="event__type-label  event__type-label--${eventTypeItem}" for="event-type-${eventTypeItem}-1">${eventTypeItem}</label>
                       </div>`).join('')}
                     </fieldset>
                   </div>
                 </div>
 
-                <div class="event__field-group  event__field-group--destination">
-                  <label class="event__label  event__type-output" for="event-destination-${id || 'new'}">
+                <div class="event__field-group event__field-group--destination">
+                  <label class="event__label event__type-output" for="event-destination-${id || 'new'}">
                     ${type}
                   </label>
-                  <select class="event__input  event__input--destination" id="event-destination-${id || 'new'}" name="event-destination">
-                    <option value="" ${!pointDestination?.name ? 'selected' : ''} disabled>Выберите пункт назначения</option>
-                    ${destinations.map((dest) =>
-    `<option value="${dest.name}" ${pointDestination?.name === dest.name ? 'selected' : ''}>
-                        ${dest.name}
-                      </option>`
-  ).join('')}
-                  </select>
+                  <input
+                    class="event__input event__input--destination"
+                    id="event-destination-${id || 'new'}"
+                    list="destinations-list-${id || 'new'}"
+                    name="event-destination"
+                    value="${pointDestination?.name || ''}"
+                    placeholder="Выберите или введите пункт назначения"
+                  >
+                  <datalist id="destinations-list-${id || 'new'}">
+                    ${destinations.map((dest) => `<option value="${dest.name}"></option>`).join('')}
+                  </datalist>
                 </div>
 
                 <div class="event__field-group  event__field-group--time">
@@ -100,8 +106,8 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                   <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${price}">
                 </div>
 
-                <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}> ${savingMessage} </button>
-                <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
+                <button class="event__save-btn btn btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>${savingMessage}</button>
+                <button class="event__reset-btn" type="button">${formType === FORM_TYPE.EDIT ? deleteMessage : 'Cancel'}</button>
                 ${formType === FORM_TYPE.EDIT ? `<button class="event__rollup-btn" type="button">
                     <span class="visually-hidden">Open event</span>
                 </button>` : ''}
@@ -114,53 +120,53 @@ function makeFormEditingTemplate(state, destinations = [], allOffers = [], formT
                       ${availableOffers.map((option) => createOfferTemplate(option, offers)).join('')}
                     </div>
                   </section>` : ''}
+                ${hasDestinationInfo ? `
                 <section class="event__section  event__section--destination">
                   <h3 class="event__section-title  event__section-title--destination">Destination</h3>
-                  <p class="event__destination-description">${pointDestination?.description}</p>
+                  ${pointDestination?.description ? `<p class="event__destination-description">${pointDestination.description}</p>` : ''}
+                  ${hasPhotos ? `
                   <div class="event__photos-container">
                     <div class="event__photos-tape">
-                      ${pointDestination?.pictures?.map((picture) => `<img class="event__photo" src="${picture.src}" alt="${picture.alt}">`).join('')}
+                      ${pointDestination.pictures.map((picture) => `<img class="event__photo" src="${picture.src}" alt="${picture.alt}">`).join('')}
                     </div>
-                  </div>
-                </section>
+                  </div>` : ''}
+                </section>` : ''}
               </section>
             </form>
           </li>`;
 }
 
 export default class FormEditing extends AbstractStatefulView {
-  #handleFormSubmit = null;
+  #onSubmitButtonClick = null;
   #destinations = null;
   #offers = null;
   #onRollButtonClick = null;
   #datepickerStart = null;
-  #handleDeleteClick = null;
+  #onDeleteButtonClick = null;
   #datepickerEnd = null;
   #onResetClick = null;
-  #onDeleteClick = null;
-  #type;
+  #formType;
 
-  constructor({event = POINT, destinations, offers, onRollButtonClick, onSubmitButtonClick, onDeleteClick, onResetClick, type = FORM_TYPE.EDIT}) {
+  constructor({ event = BLANK_POINT, destinations, offers, onRollButtonClick, onSubmitButtonClick, onDeleteClick, onResetClick, type = FORM_TYPE.EDIT }) {
     super();
-    this._setState({event});
+    this._setState({ event, isDisabled: false, isSaving: false, isDeleting: false });
     this.#destinations = destinations || [];
     this.#offers = offers || [];
     this.#onRollButtonClick = onRollButtonClick;
-    this.#handleFormSubmit = onSubmitButtonClick;
-    this.#handleDeleteClick = onDeleteClick;
-    this.#onDeleteClick = onDeleteClick;
+    this.#onSubmitButtonClick = onSubmitButtonClick;
+    this.#onDeleteButtonClick = onDeleteClick;
     this.#onResetClick = onResetClick;
-    this.#type = type;
+    this.#formType = type;
     this._restoreHandlers();
   }
 
   get template() {
-    return makeFormEditingTemplate(this._state, this.#destinations, this.#offers, this.#type);
+    return createFormEditingTemplate(this._state, this.#destinations, this.#offers, this.#formType);
   }
 
-  reset = (event) => this.updateElement({event});
+  reset = (event) => this.updateElement({ event });
 
-  #onSubmitButtonElementClick = async (evt) => {
+  #handleSubmitButtonElementClick = (evt) => {
     evt.preventDefault();
 
     if (this._state.isDisabled) {
@@ -174,30 +180,22 @@ export default class FormEditing extends AbstractStatefulView {
       return;
     }
 
-    try {
-      this.updateElement({
-        isDisabled: true,
-        isSaving: true,
-      });
+    this.updateElement({
+      isDisabled: true,
+      isSaving: true,
+    });
 
-      await this.#handleFormSubmit(pointToSave);
-    } catch (error) {
-      this.shake();
-      this.updateElement({
-        isDisabled: false,
-        isSaving: false,
-      });
-    }
+    this.#onSubmitButtonClick(pointToSave);
   };
 
   #validatePointData = (point) => point.destination &&
-      point.destination !== 'unknown' &&
-      point.price > 0 &&
-      point.dateFrom &&
-      point.dateTo &&
-      point.dateFrom < point.dateTo;
+    point.destination !== 'unknown' &&
+    point.price > 0 &&
+    point.dateFrom &&
+    point.dateTo &&
+    point.dateFrom < point.dateTo;
 
-  #changePointType = (event) => {
+  #handlePointTypeChange = (event) => {
     this.updateElement({
       event: {
         ...this._state.event,
@@ -207,7 +205,7 @@ export default class FormEditing extends AbstractStatefulView {
     });
   };
 
-  #onPriceChange = (event) => {
+  #handlePriceChange = (event) => {
     this._setState({
       event: {
         ...this._state.event,
@@ -216,23 +214,22 @@ export default class FormEditing extends AbstractStatefulView {
     });
   };
 
-  #onOffersChange = (event) => {
+  #handleOffersChange = (event) => {
     const offerId = event.target.value;
     const currentOffers = [...this._state.event.offers];
-
     const normalizedId = isNaN(Number(offerId)) ? offerId : Number(offerId);
 
-    this._setState({
+    this.updateElement({
       event: {
         ...this._state.event,
         offers: currentOffers.includes(normalizedId)
-          ? currentOffers.filter((id) => id !== normalizedId)
+          ? currentOffers.filter((idItem) => idItem !== normalizedId)
           : [...currentOffers, normalizedId]
       }
     });
   };
 
-  #onDestinationChange = (event) => {
+  #handleDestinationChange = (event) => {
     const cityName = event.target.value;
     const selectedDestination = this.#destinations.find((dest) => dest.name === cityName);
 
@@ -247,36 +244,27 @@ export default class FormEditing extends AbstractStatefulView {
   };
 
 
-  #onRollButtonElementClick = (event) => {
+  #handleRollButtonElementClick = (event) => {
     event.preventDefault();
     this.#onRollButtonClick();
   };
 
-  #onDeleteButtonClick = async (event) => {
+  #handleDeleteButtonElementClick = (event) => {
     event.preventDefault();
 
     if (this._state.isDisabled) {
       return;
     }
 
-    try {
-      this.updateElement({
-        isDisabled: true,
-        isDeleting: true,
-      });
+    this.updateElement({
+      isDisabled: true,
+      isDeleting: true,
+    });
 
-      await this.#handleDeleteClick(this._state.event);
-
-    } catch (error) {
-      this.shake();
-      this.updateElement({
-        isDisabled: false,
-        isDeleting: false,
-      });
-    }
+    this.#onDeleteButtonClick(this._state.event);
   };
 
-  #onDateEndCloseButton = ([date]) => {
+  #handleDateEndClose = ([date]) => {
     this._setState({
       event: {
         ...this._state.event,
@@ -290,21 +278,21 @@ export default class FormEditing extends AbstractStatefulView {
     const [dateStartElement, dateEndElement] = this.element.querySelectorAll('.event__input--time');
 
     this.#datepickerStart = flatpickr(dateStartElement, {
-      ...FLATPICKR_CONFIG,
+      ...FLAT_PICKER_CONFIG,
       defaultDate: this._state.event.dateFrom,
-      onClose: this.#onDateStartCloseButton,
+      onClose: this.#handleDateStartClose,
       maxDate: this._state.event.dateTo,
     });
 
     this.#datepickerEnd = flatpickr(dateEndElement, {
-      ...FLATPICKR_CONFIG,
+      ...FLAT_PICKER_CONFIG,
       defaultDate: this._state.event.dateTo,
-      onClose: this.#onDateEndCloseButton,
+      onClose: this.#handleDateEndClose,
       minDate: this._state.event.dateFrom,
     });
   };
 
-  #onDateStartCloseButton = ([date]) => {
+  #handleDateStartClose = ([date]) => {
     this._setState({
       event: {
         ...this._state.event,
@@ -317,11 +305,11 @@ export default class FormEditing extends AbstractStatefulView {
   removeElement = () => {
     super.removeElement();
 
-    if(this.#datepickerStart) {
+    if (this.#datepickerStart) {
       this.#datepickerStart.destroy();
       this.#datepickerStart = null;
     }
-    if(this.#datepickerEnd) {
+    if (this.#datepickerEnd) {
       this.#datepickerEnd.destroy();
       this.#datepickerEnd = null;
     }
@@ -329,24 +317,32 @@ export default class FormEditing extends AbstractStatefulView {
 
   #formValidation = () => {
     const formNode = this.element.querySelector('form');
-    const destInput = this.element.querySelector('.event__input--destination');
-    const priceInput = this.element.querySelector('.event__input--price');
-    const dateFromInput = this.element.querySelector('[name="event-start-time"]');
-    const dateToInput = this.element.querySelector('[name="event-end-time"]');
-
-    const destValue = destInput?.value || '';
-    const priceValue = priceInput?.value || '';
-    const dateFrom = dateFromInput?.value || '';
-    const dateTo = dateToInput?.value || '';
-
-    const isDurationValid = dateFrom && dateTo;
-    const isValid = priceValue && Number(priceValue) > 0 && destValue && isDurationValid;
-
-    formNode.querySelector('.event__save-btn').disabled = !isValid;
-    const saveButton = formNode.querySelector('.event__save-btn');
-    if (saveButton) {
-      saveButton.disabled = !isValid;
+    if (!formNode) {
+      return;
     }
+
+    const destinationInput = formNode.querySelector('.event__input--destination');
+    const priceInput = formNode.querySelector('.event__input--price');
+    const dateFromInput = formNode.querySelector('[name="event-start-time"]');
+    const dateToInput = formNode.querySelector('[name="event-end-time"]');
+    const saveButton = formNode.querySelector('.event__save-btn');
+
+    if (!destinationInput || !priceInput || !dateFromInput || !dateToInput || !saveButton) {
+      return;
+    }
+
+    const destinationValue = destinationInput.value.trim();
+    const priceValue = Number(priceInput.value);
+    const dateFrom = dateFromInput.value;
+    const dateTo = dateToInput.value;
+
+    const isValid = priceValue > 0 &&
+      destinationValue &&
+      dateFrom &&
+      dateTo &&
+      this.#destinations.some((dest) => dest.name === destinationValue);
+
+    saveButton.disabled = !isValid || this._state.isDisabled;
   };
 
   #parseStateToPoint = () => {
@@ -363,26 +359,29 @@ export default class FormEditing extends AbstractStatefulView {
   };
 
   _restoreHandlers() {
-    if (this.#type === FORM_TYPE.EDIT) {
-      this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#onRollButtonElementClick);
-      this.element.querySelector('.event__reset-btn').addEventListener('click', this.#onDeleteButtonClick);
+    if (this.#formType === FORM_TYPE.EDIT) {
+      this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#handleRollButtonElementClick);
+      this.element.querySelector('.event__reset-btn').addEventListener('click', this.#handleDeleteButtonElementClick);
     }
-    if (this.#type === FORM_TYPE.CREATE) {
-      this.element.querySelector('.event__reset-btn').addEventListener('click', this.#onResetClick);
+    if (this.#formType === FORM_TYPE.CREATE) {
+      this.element.querySelector('.event__reset-btn').addEventListener('click', (evt) => {
+        evt.preventDefault();
+        this.#onResetClick?.();
+      });
     }
-    this.element.querySelector('.event--edit').addEventListener('submit', this.#onSubmitButtonElementClick);
+    this.element.querySelector('.event--edit').addEventListener('submit', this.#handleSubmitButtonElementClick);
     this.element.querySelector('.event--edit').addEventListener('input', this.#formValidation);
-    this.element.querySelector('.event__type-group').addEventListener('change', this.#changePointType);
-    this.element.querySelector('.event__input--price').addEventListener('change', this.#onPriceChange);
-    this.element.querySelector('.event__input--destination').addEventListener('change', this.#onDestinationChange);
+    this.element.querySelector('.event__type-group').addEventListener('change', this.#handlePointTypeChange);
+    this.element.querySelector('.event__input--price').addEventListener('change', this.#handlePriceChange);
+    this.element.querySelector('.event__input--destination').addEventListener('change', this.#handleDestinationChange);
     this.element.querySelectorAll('.event__offer-checkbox').forEach((element) =>
-      element.addEventListener('change', this.#onOffersChange));
+      element.addEventListener('change', this.#handleOffersChange));
     this.#formValidation();
     this.#setDatepickers();
     if (this.element) {
       const form = this.element.querySelector('.event--edit');
       if (form) {
-        this.#formValidation({ target: form });
+        this.#formValidation();
       }
     }
   }
