@@ -1,6 +1,9 @@
 import { render, replace, remove } from '../framework/render.js';
 import TripInfoView from '../view/trip-info-view.js';
 
+const MAX_CITIES_DISPLAYED = 3;
+
+
 export default class TripInfoPresenter {
   #container = null;
   #pointsModel = null;
@@ -54,7 +57,7 @@ export default class TripInfoPresenter {
       return destination ? destination.name : 'Unknown';
     });
 
-    if (cities.length <= 3) {
+    if (cities.length <= MAX_CITIES_DISPLAYED) {
       return cities.join(' — ');
     }
 

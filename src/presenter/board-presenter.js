@@ -33,6 +33,12 @@ export default class BoardPresenter {
     upperLimit: 1000,
   });
 
+  get points() {
+    this.#filterType = this.#filterModel.filter;
+    const points = this.#pointsModel.points;
+    return filterPoints[this.#filterType](points);
+  }
+
   constructor({ eventsContainer, filterModel, pointsModel, buttonPointPresenter }) {
     this.#eventsContainer = eventsContainer;
     this.#filterModel = filterModel;
@@ -298,11 +304,5 @@ export default class BoardPresenter {
       }
       this.#currentSortType = SORT_TYPE.DAY;
     }
-  }
-
-  get points() {
-    this.#filterType = this.#filterModel.filter;
-    const points = this.#pointsModel.points;
-    return filterPoints[this.#filterType](points);
   }
 }

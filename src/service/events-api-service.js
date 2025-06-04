@@ -1,4 +1,4 @@
-import { METHOD_TYPE } from '../const.js';
+import {METHOD_TYPE} from '../const.js';
 import ApiService from '../framework/api-service';
 
 export default class EventsApiService extends ApiService {
@@ -36,11 +36,10 @@ export default class EventsApiService extends ApiService {
   }
 
   async deletePoint(point) {
-    const response = await this._load({
+    return await this._load({
       url: `points/${point.id}`,
       method: METHOD_TYPE.DELETE,
     });
-    return response;
   }
 
   async updatePoint(point) {
